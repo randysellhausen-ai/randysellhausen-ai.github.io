@@ -1,120 +1,140 @@
-(function () {
-    const root = window.APEXSIM || {};
-    const Engine = root.Engine || {};
-    const Renderer = root.Renderer || {};
-    const Test = root.Test || {};
-    const Camera = root.Camera || {};
-    const Debug = root.Debug || {};
+// =========================================================
+// APEXUI.ControlPanel — Liminal Engine v8.2
+// Connects UI buttons/sliders → Engine / Renderer / Camera
+// =========================================================
+// - Play / Pause / Step
+// - Speed slider
+// - Spawn 1 / Spawn 20 / Clear Units
+// - Grid toggle (handled by RendererControl)
+// - Debug toggle (handled by DebugControl)
+// - Camera zoom/reset (handled by Camera)
+// =========================================================
 
-    function $(id) {
-        return document.getElementById(id);
-    }
+window.APEXUI = window.APEXUI || {};
 
-    function safeCall(obj, fn, ...args) {
-        if (obj && typeof obj[fn] === "function") {
-            obj[fn](...args);
-        } else {
-            console.warn("[CONTROL PANEL] Missing", fn, "on", obj);
-        }
-    }
+APEXUI.ControlPanel = {
 
-    function initPanel() {
-        const panel = $("apex-control-panel");
-        const toggleBtn = $("vc-panel-toggle");
+    init() {
+        const Engine   = window.APEXSIM && APEXSIM.Engine;
+        const Renderer = window.APEXSIM && APEXSIM.Renderer;
+        const Camera   = window.APEXSIM && APEXSIM.Camera;
 
-        const playBtn = $("vc-sim-play");
-        const pauseBtn = $("vc-sim-pause");
-        const stepBtn = $("vc-sim-step");
-        const speedSlider = $("vc-sim-speed");
-        const speedValue = $("vc-sim-speed-value");
+        if (!Engine)   console.error("APEXUI.ControlPanel — Engine missing.");
+        if (!Renderer) console.error("APEXUI.ControlPanel — Renderer missing.");
+        if (!Camera)   console.error("APEXUI.ControlPanel — Camera missing.");
 
-        const spawn1Btn = $("vc-units-spawn-1");
-        const spawn20Btn = $("vc-units-spawn-20");
-        const clearUnitsBtn = $("vc-units-clear");
+        // =================================================
+        // PANEL TOGGLE
+        // =================================================
+        const panel = document.getElementById("apex-control-panel");
+        const toggleBtn = document.getElementById("vc-panel-toggle");
 
-        const gridCheckbox = $("vc-render-grid");
-        const debugCheckbox = $("vc-render-debug");
-
-        const zoomInBtn = $("vc-camera-zoom-in");
-        const zoomOutBtn = $("vc-camera-zoom-out");
-        const cameraResetBtn = $("vc-camera-reset");
-
-        if (!panel) {
-            console.error("[CONTROL PANEL] Panel root not found.");
-            return;
+        if (panel && toggleBtn) {
+            toggleBtn.addEventListener("click", () => {
+                panel.classList.toggle("vc-panel--collapsed");
+            });
         }
 
-        // Panel toggle
-        toggleBtn.addEventListener("click", () => {
-            panel.classList.toggle("vc-panel--collapsed");
-        });
+        // =================================================
+        // SIMULATION CONTROLS
+        // =================================================
 
-        // Simulation controls
-        playBtn.addEventListener("click", () => {
-            safeCall(Engine, "resume");
-        });
+        // Play
+        const playBtn = document.getElementById("vc-sim-play");
+        if (playBtn) {
+            playBtn.addEventListener("click", () => {
+                Engine.resume();
+            });
+        }
 
-        pauseBtn.addEventListener("click", () => {
-            safeCall(Engine, "pause");
-        });
+        // Pause
+        const pauseBtn = document.getElementById("vc-sim-pause");
+        if (pauseBtn) {
+            pauseBtn.addEventListener("click", () => {
+                Engine.pause();
+            });
+        }
 
-        stepBtn.addEventListener("click", () => {
-            safeCall(Engine, "step");
-        });
+        // Step
+        const stepBtn = document.getElementById("vc-sim-step");
+        if (stepBtn) {
+            stepBtn.addEventListener("click", () => {
+                Engine.step();
+            });
+        }
 
-        speedSlider.addEventListener("input", () => {
-            const value = parseFloat(speedSlider.value);
-            speedValue.textContent = value.toFixed(1) + "x";
-            safeCall(Engine, "setTimeScale", value);
-        });
+        // Speed slider
+        const speedSlider = document.getElementById("vc-sim-speed");
+        const speedValue  = document.getElementById("vc-sim-speed-value");
 
-        // Unit controls
-        spawn1Btn.addEventListener("click", () => {
-            safeCall(Test, "spawnTestUnit");
-        });
+        if (speedSlider && speedValue) {
+            speedSlider.addEventListener("input", () => {
+                const v = parseFloat(speedSlider.value);
+                Engine.setTimeScale(v);
+                speedValue.textContent = v.toFixed(1) + "x";
+            });
+        }
 
-        spawn20Btn.addEventListener("click", () => {
-            if (Test && typeof Test.spawnTestUnit === "function") {
-                for (let i = 0; i < 20; i++) {
-                    Test.spawnTestUnit();
-                }
-            } else {
-                console.warn("[CONTROL PANEL] APEXSIM.Test.spawnTestUnit not available.");
-            }
-        });
+        // =================================================
+        // UNIT CONTROLS
+        // =================================================
 
-        clearUnitsBtn.addEventListener("click", () => {
-            safeCall(Engine, "clearUnits");
-        });
+        // Spawn 1
+        const spawn1Btn = document.getElementById("vc-units-spawn-1");
+        if (spawn1Btn) {
+            spawn1Btn.addEventListener("click", () => {
+                Engine.spawnUnits(1);
+            });
+        }
 
-        // Renderer controls
-        gridCheckbox.addEventListener("change", () => {
-            safeCall(Renderer, "setGridVisible", gridCheckbox.checked);
-        });
+        // Spawn 20
+        const spawn20Btn = document.getElementById("vc-units-spawn-20");
+        if (spawn20Btn) {
+            spawn20Btn.addEventListener("click", () => {
+                Engine.spawnUnits(20);
+            });
+        }
 
-        debugCheckbox.addEventListener("change", () => {
-            safeCall(Debug, "setDebugVisible", debugCheckbox.checked);
-        });
+        // Clear Units
+        const clearBtn = document.getElementById("vc-units-clear");
+        if (clearBtn) {
+            clearBtn.addEventListener("click", () => {
+                Engine.clearUnits();
+            });
+        }
 
-        // Camera controls
-        zoomInBtn.addEventListener("click", () => {
-            safeCall(Camera, "zoomIn");
-        });
+        // =================================================
+        // CAMERA CONTROLS (delegated to APEXSIM.Camera)
+        // =================================================
 
-        zoomOutBtn.addEventListener("click", () => {
-            safeCall(Camera, "zoomOut");
-        });
+        const zoomInBtn = document.getElementById("vc-camera-zoom-in");
+        if (zoomInBtn) {
+            zoomInBtn.addEventListener("click", () => {
+                Camera.zoomIn();
+            });
+        }
 
-        cameraResetBtn.addEventListener("click", () => {
-            safeCall(Camera, "reset");
-        });
+        const zoomOutBtn = document.getElementById("vc-camera-zoom-out");
+        if (zoomOutBtn) {
+            zoomOutBtn.addEventListener("click", () => {
+                Camera.zoomOut();
+            });
+        }
 
-        console.log("[CONTROL PANEL] VECTORCORE × LIMINAL ENGINE control panel initialized.");
+        const resetCamBtn = document.getElementById("vc-camera-reset");
+        if (resetCamBtn) {
+            resetCamBtn.addEventListener("click", () => {
+                Camera.reset();
+            });
+        }
+
+        console.log("APEXUI.ControlPanel — Ready.");
     }
+};
 
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initPanel);
-    } else {
-        initPanel();
+// Auto‑init after DOM is ready
+document.addEventListener("DOMContentLoaded", () => {
+    if (window.APEXUI && APEXUI.ControlPanel) {
+        APEXUI.ControlPanel.init();
     }
-})();
+});
