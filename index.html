@@ -129,8 +129,7 @@
     <script src="apexsim/stance/apex-stance.js"></script>
     <script src="apexsim/apexsim-test.js"></script>
 
-    <!-- CONTROL LAYER FOR ENGINE / RENDERER / DEBUG / CAMERA -->
-    <script src="apexsim/apexsim-engine-control.js"></script>
+    <!-- CONTROL LAYER (ENGINE CONTROL REMOVED) -->
     <script src="apexsim/apexsim-renderer-control.js"></script>
     <script src="apexsim/apexsim-debug-control.js"></script>
     <script src="apexsim/apexsim-camera.js"></script>
@@ -157,24 +156,24 @@
     <!-- CONTROL PANEL CONTROLLER -->
     <script src="apexui/apexui-controlpanel.js"></script>
 
-    <!-- BOOTSTRAP -->
+    <!-- FINAL FIXED BOOTSTRAP BLOCK -->
     <script>
         const canvas = document.getElementById("apexsim-canvas");
 
+        // Attach UI to canvas
         if (window.APEXSIM && window.APEXSIM.UI && typeof window.APEXSIM.UI.attachCanvas === "function") {
             window.APEXSIM.UI.attachCanvas(canvas);
         } else {
             console.error("APEXSIM.UI.attachCanvas is not available.");
         }
 
+        // Spawn one test unit on load (optional)
         if (window.APEXSIM && window.APEXSIM.Test && typeof window.APEXSIM.Test.spawnTestUnit === "function") {
             window.APEXSIM.Test.spawnTestUnit();
         }
 
+        // Render loop ONLY — engine runs itself internally
         function loop() {
-            if (window.APEXSIM && window.APEXSIM.Engine && typeof window.APEXSIM.Engine.update === "function") {
-                window.APEXSIM.Engine.update();
-            }
             if (window.APEXSIM && window.APEXSIM.Renderer && typeof window.APEXSIM.Renderer.draw === "function") {
                 window.APEXSIM.Renderer.draw();
             }
