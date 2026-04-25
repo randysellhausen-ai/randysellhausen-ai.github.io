@@ -1,9 +1,10 @@
 // =========================================================
-// APEXSIM — Renderer (v8.0)
+// APEXSIM — Renderer (v8.1)
 // =========================================================
 // Handles:
 // - Canvas transforms
 // - Camera zoom + offset
+// - World rendering (APEXWORLD v1.0)
 // - Grid rendering
 // - Unit rendering
 // - Debug overlay
@@ -60,6 +61,13 @@ APEXSIM.Renderer = {
         ctx.translate(-APEXSIM.Camera.x, -APEXSIM.Camera.y);
 
         // =====================================================
+        // WORLD RENDERING (APEXWORLD v1.0)
+        // =====================================================
+        if (window.APEXWORLD && APEXWORLD.Renderer) {
+            APEXWORLD.Renderer.draw(ctx);
+        }
+
+        // =====================================================
         // GRID RENDERING
         // =====================================================
         if (this._showGrid) {
@@ -100,7 +108,7 @@ APEXSIM.Renderer = {
         for (let y = 0; y < h; y += tile) {
             ctx.beginPath();
             ctx.moveTo(0, y);
-            ctx.lineTo(w, y);
+            ctx.lineTo(0 + w, y);
             ctx.stroke();
         }
     },
