@@ -1,5 +1,5 @@
 // =========================================================
-// APEXSIM — RENDERER
+// APEXSIM — RENDERER (Unified Version with TEST Overlays)
 // =========================================================
 // Handles drawing the simulation: grid, units, overlays.
 // =========================================================
@@ -10,6 +10,9 @@ window.APEXSIM.Renderer = (function () {
 
     const gridSize = 32;
 
+    // =========================================================
+    // GRID
+    // =========================================================
     function drawGrid(ctx, width, height) {
         ctx.strokeStyle = "#333";
         ctx.lineWidth = 1;
@@ -29,16 +32,20 @@ window.APEXSIM.Renderer = (function () {
         }
     }
 
+    // =========================================================
+    // UNITS
+    // =========================================================
     function drawUnits(ctx) {
         const units = window.APEXSIM.Core.getUnits();
 
         for (let unit of units) {
             if (!unit.x || !unit.y) continue;
 
+            // Base body
             ctx.fillStyle = unit.color || "cyan";
             ctx.fillRect(unit.x - 10, unit.y - 10, 20, 20);
 
-            // Optional: stance indicator
+            // Stance indicator
             if (unit.stance) {
                 ctx.fillStyle = "yellow";
                 ctx.fillRect(unit.x - 3, unit.y - 20, 6, 6);
@@ -46,6 +53,9 @@ window.APEXSIM.Renderer = (function () {
         }
     }
 
+    // =========================================================
+    // PUBLIC API
+    // =========================================================
     return {
 
         draw() {
@@ -62,6 +72,13 @@ window.APEXSIM.Renderer = (function () {
 
             // Units
             drawUnits(ctx);
+
+            // =====================================================
+            // TEST SUBSYSTEM OVERLAYS (TACTICAL + DEBUG)
+            // =====================================================
+            if (window.APEXSIM.Test && window.APEXSIM.Test.drawOverlays) {
+                window.APEXSIM.Test.drawOverlays(ctx);
+            }
         }
     };
 
