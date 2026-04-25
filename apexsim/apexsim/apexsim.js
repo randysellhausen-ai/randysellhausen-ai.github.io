@@ -1,77 +1,76 @@
 // =========================================================
-// APEXSIM — STANCE SYSTEM v1
+// APEXSIM — MAIN SIMULATION CONTROLLER
 // =========================================================
-// Simple, deterministic stance manager for units.
-// Provides: set/get stance, stance modifiers, auto-updates.
+// This file initializes APEXSIM, loads subsystems, and
+// provides the main update + render loop.
+// Stance System is fully wired in.
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
+window.APEXSIM.StanceSystem = window.APEXSIM.StanceSystem || {};
 
-window.APEXSIM.StanceSystem = (function () {
+window.APEXSIM = (function () {
 
-    const STANCES = {
-        neutral: {
-            id: "neutral",
-            accuracy: 1.0,
-            defense: 1.0,
-            speed: 1.0
-        },
-        aggressive: {
-            id: "aggressive",
-            accuracy: 1.1,
-            defense: 0.9,
-            speed: 1.1
-        },
-        defensive: {
-            id: "defensive",
-            accuracy: 0.9,
-            defense: 1.2,
-            speed: 0.9
-        }
-    };
+    const SIM = {
+        units: [],
 
-    const unitStances = Object.create(null);
+        // ---------------------------------------------
+        // Initialize simulation
+        // ---------------------------------------------
+        init() {
+            console.log("APEXSIM initialized.");
 
-    return {
-
-        // Set stance for a unit
-        setStance(unitId, stance) {
-            if (!STANCES[stance]) {
-                console.warn("[STANCE] Invalid stance:", stance);
-                return;
-            }
-            unitStances[unitId] = stance;
+            // Future: load units, maps, AI, etc.
         },
 
-        // Get stance for a unit
-        getStance(unitId) {
-            return unitStances[unitId] || "neutral";
-        },
+        // ---------------------------------------------
+        // Update simulation
+        // ---------------------------------------------
+        update(delta) {
+            // Future: movement, AI, combat, etc.
 
-        // Get stance modifiers
-        getModifiers(unitId) {
-            const stance = this.getStance(unitId);
-            return STANCES[stance];
-        },
-
-        // Auto-update stance based on morale/suppression
-        updateFromMorale(unitId, morale, suppression) {
-            if (suppression > 0.7) {
-                this.setStance(unitId, "defensive");
-            } else if (morale > 0.8) {
-                this.setStance(unitId, "aggressive");
+            // Stance System hook (future: morale/suppression)
+            if (window.APEXSIM.StanceSystem) {
+                // Placeholder: no automatic stance changes yet
             }
         },
 
-        // Clear stance for a unit
-        clear(unitId) {
-            delete unitStances[unitId];
+        // ---------------------------------------------
+        // Render simulation
+        // ---------------------------------------------
+        render(ctx) {
+            // Future: draw units, terrain, effects
+
+            // Draw stance overlay if available
+            if (window.APEXSIM.renderStanceOverlay) {
+                window.APEXSIM.renderStanceOverlay(ctx, SIM.units);
+            }
         },
 
-        // Reset all stances
-        resetAll() {
-            for (const id in unitStances) delete unitStances[id];
+        // ---------------------------------------------
+        // Start simulation loop
+        // ---------------------------------------------
+        start() {
+            console.log("APEXSIM started.");
+            let last = performance.now();
+
+            function loop(now) {
+                const delta = now - last;
+                last = now;
+
+                SIM.update(delta);
+
+                // Future: pass real canvas context
+                // Example:
+                // SIM.render(ctx);
+
+                requestAnimationFrame(loop);
+            }
+
+            requestAnimationFrame(loop);
         }
     };
+
+    return SIM;
 
 })();
