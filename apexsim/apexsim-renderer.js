@@ -1,22 +1,38 @@
-// APEXSIM Renderer — Grid + Units + Camera
+// =========================================================
+// APEXSIM — Renderer (v8.0)
+// =========================================================
+// Handles:
+// - Canvas transforms
+// - Camera zoom + offset
+// - Grid rendering
+// - Unit rendering
+// - Debug overlay
+// =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
 
 APEXSIM.Renderer = {
+
     canvas: null,
     ctx: null,
+
+    // Grid toggle (controlled by UI panel)
     _showGrid: true,
 
-    attachCanvas(canvas) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext("2d");
+    // Attach canvas from UI layer
+    attachCanvas(canvasElement) {
+        this.canvas = canvasElement;
+        this.ctx = canvasElement.getContext("2d");
+
         console.log("APEXSIM.Renderer — Canvas attached.");
     },
 
+    // Called by UI panel
     setGridVisible(visible) {
         this._showGrid = !!visible;
     },
 
+    // Main draw loop (called every frame from index.html)
     draw() {
         if (!this.ctx || !this.canvas) return;
 
@@ -24,57 +40,100 @@ APEXSIM.Renderer = {
         const w = this.canvas.width;
         const h = this.canvas.height;
 
+        // Reset transform
         ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+        // Clear screen
         ctx.clearRect(0, 0, w, h);
 
-        // Camera
-        const tileSize = 16;
-        ctx.translate(w / 2, h / 2);
-        ctx.scale(APEXSIM.Camera.zoom, APEXSIM.Camera.zoom);
-        ctx.translate(-w / 2, -h / 2);
-        ctx.translate(-APEXSIM.Camera.x, -APEXSIM.Camera.y);
-
-        // Background
+        // Fill background
         ctx.fillStyle = "#000000";
         ctx.fillRect(0, 0, w, h);
 
-        // Grid
+        // =====================================================
+        // CAMERA TRANSFORM
+        // =====================================================
+        ctx.translate(w / 2, h / 2);
+        ctx.scale(APEXSIM.Camera.zoom, APEXSIM.Camera.zoom);
+        ctx.translate(-w / 2, -h / 2);
+
+        ctx.translate(-APEXSIM.Camera.x, -APEXSIM.Camera.y);
+
+        // =====================================================
+        // GRID RENDERING
+        // =====================================================
         if (this._showGrid) {
-            ctx.strokeStyle = "rgba(40, 60, 80, 0.6)";
-            ctx.lineWidth = 1;
-            for (let x = 0; x < w; x += tileSize) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, h);
-                ctx.stroke();
-            }
-            for (let y = 0; y < h; y += tileSize) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(w, y);
-                ctx.stroke();
-            }
+            this._drawGrid(ctx, w, h);
         }
 
-        // Units
+        // =====================================================
+        // UNIT RENDERING
+        // =====================================================
+        this._drawUnits(ctx);
+
+        // =====================================================
+        // DEBUG OVERLAY
+        // =====================================================
+        if (APEXSIM.Debug && APEXSIM.Debug._visible) {
+            APEXSIM.Debug.draw(ctx, w, h);
+        }
+    },
+
+    // =========================================================
+    // Draw grid
+    // =========================================================
+    _drawGrid(ctx, w, h) {
+        const tile = 16;
+
+        ctx.strokeStyle = "rgba(40, 60, 80, 0.6)";
+        ctx.lineWidth = 1;
+
+        // Vertical lines
+        for (let x = 0; x < w; x += tile) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, h);
+            ctx.stroke();
+        }
+
+        // Horizontal lines
+        for (let y = 0; y < h; y += tile) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y);
+            ctx.stroke();
+        }
+    },
+
+    // =========================================================
+    // Draw units
+    // =========================================================
+    _drawUnits(ctx) {
         const units = (APEXSIM.Engine && APEXSIM.Engine.units) || [];
+        const tile = 16;
+
         for (let i = 0; i < units.length; i++) {
             const u = units[i];
-            const px = u.x * tileSize;
-            const py = u.y * tileSize;
 
-            // Base square
+            const px = u.x * tile;
+            const py = u.y * tile;
+
+            // Base body
             ctx.fillStyle = "#00c8ff";
             ctx.fillRect(px - 6, py - 6, 12, 12);
 
             // Top marker
             ctx.fillStyle = "#ffd84a";
             ctx.fillRect(px - 3, py - 10, 6, 4);
-        }
 
-        // Debug overlay
-        if (APEXSIM.Debug && APEXSIM.Debug._visible) {
-            APEXSIM.Debug.draw(ctx, w, h);
+            // Optional: velocity line (for debugging movement)
+            if (APEXSIM.Debug && APEXSIM.Debug._visible) {
+                ctx.strokeStyle = "#ff4444";
+                ctx.beginPath();
+                ctx.moveTo(px, py);
+                ctx.lineTo(px + u.vx * 4, py + u.vy * 4);
+                ctx.stroke();
+            }
         }
     }
 };
