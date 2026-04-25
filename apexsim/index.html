@@ -2,55 +2,63 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>APEXSIM Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APEXSIM — VECTORCORE × LIMINAL ENGINE</title>
+
+    <!-- VECTORCORE × LIMINAL ENGINE Favicon Pack -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon-64x64.png">
+    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128x128.png">
+    <link rel="icon" type="image/png" sizes="256x256" href="favicon-256x256.png">
+
     <style>
         body {
-            background: #000;
             margin: 0;
+            background: #000;
             overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        }
+        #apexsim-canvas {
+            display: block;
+            width: 100vw;
             height: 100vh;
+            background: #000;
         }
     </style>
 </head>
 
 <body>
 
-    <!-- ========================================================= -->
-    <!-- APEXSIM CANVAS                                            -->
-    <!-- ========================================================= -->
-    <canvas id="apexsim-canvas" width="800" height="600" style="background:#111;"></canvas>
+    <!-- MAIN SIMULATION CANVAS -->
+    <canvas id="apexsim-canvas" width="1280" height="720"></canvas>
 
-    <!-- ========================================================= -->
-    <!-- APEXSIM ENGINE FILES (correct paths for your repo)        -->
-    <!-- ========================================================= -->
-    <script src="apexsim.js"></script>
-    <script src="apexsim-core.js"></script>
-    <script src="apexsim-engine.js"></script>
-    <script src="apexsim-systems.js"></script>
-    <script src="apexsim-modules.js"></script>
-    <script src="apexsim-ui.js"></script>
-    <script src="apexsim-renderer.js"></script>
-    <script src="apexsim-physics.js"></script>
-    <script src="apexsim-data.js"></script>
-    <script src="apexsim-debug.js"></script>
-    <script src="stance/apex-stance.js"></script>
-    <script src="apexsim-test.js"></script>
+    <!-- CORE ENGINE -->
+    <script src="apexcore.js"></script>
 
-    <!-- ========================================================= -->
-    <!-- APEXSIM BOOT SEQUENCE                                     -->
-    <!-- ========================================================= -->
+    <!-- SIMULATION SUBSYSTEMS -->
+    <script src="apexsim/apexsim-renderer.js"></script>
+    <script src="apexsim/apexsim-test.js"></script>
+
+    <!-- UI SYSTEM -->
+    <script src="apexui/apexui-hud.js"></script>
+
+    <!-- WORLD SYSTEM -->
+    <script src="apexworld/apexworld-data.js"></script>
+
+    <!-- GAME SYSTEM -->
+    <script src="apexgame/apexgame-events.js"></script>
+
+    <!-- BOOTSTRAP -->
     <script>
-        // Attach canvas
+        // Canvas
         const canvas = document.getElementById("apexsim-canvas");
         window.APEXSIM.UI.attachCanvas(canvas);
 
-        // Spawn test unit
+        // Spawn test units
         window.APEXSIM.Test.spawnTestUnit();
 
-        // Main simulation loop
+        // Main loop
         function loop() {
             window.APEXSIM.Engine.update();
             window.APEXSIM.Renderer.draw();
