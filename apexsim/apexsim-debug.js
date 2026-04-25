@@ -1,39 +1,38 @@
-// =========================================================
-// APEXSIM — DEBUG
-// =========================================================
-// Debug helpers: logging, inspection, overlays.
-// =========================================================
+// APEXSIM Debug — FPS + Unit Count + Overlay
 
 window.APEXSIM = window.APEXSIM || {};
 
-window.APEXSIM.Debug = (function () {
+APEXSIM.Debug = {
+    _visible: false,
+    _lastTime: null,
+    _fps: 0,
 
-    return {
+    setDebugVisible(visible) {
+        this._visible = !!visible;
+    },
 
-        // Log all units
-        logUnits() {
-            console.log("APEXSIM Units:", window.APEXSIM.Core.getUnits());
-        },
-
-        // Log all systems
-        logSystems() {
-            console.log("APEXSIM Systems:", window.APEXSIM.Systems);
-        },
-
-        // Log all modules
-        logModules() {
-            console.log("APEXSIM Modules:", window.APEXSIM.Modules.list());
-        },
-
-        // Draw debug text on canvas
-        drawText(text, x = 10, y = 20, color = "white") {
-            const ctx = window.APEXSIM.UI.getContext();
-            if (!ctx) return;
-
-            ctx.fillStyle = color;
-            ctx.font = "14px monospace";
-            ctx.fillText(text, x, y);
+    _updateFPS() {
+        const now = performance.now() / 1000;
+        if (this._lastTime === null) {
+            this._lastTime = now;
+            return;
         }
-    };
+        const dt = now - this._lastTime;
+        this._lastTime = now;
+        this._fps = this._fps * 0.9 + (1 / dt) * 0.1;
+    },
 
-})();
+    draw(ctx, w, h) {
+        this._updateFPS();
+
+        const units = (APEXSIM.Engine && APEXSIM.Engine.units) || [];
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.font = "12px system-ui, sans-serif";
+        ctx.fillStyle = "#ffffff";
+        ctx.textBaseline = "top";
+
+        ctx.fillText("FPS: " + this._fps.toFixed(1), 10, 10);
+        ctx.fillText("Units: " + units.length, 10, 26);
+    }
+};
