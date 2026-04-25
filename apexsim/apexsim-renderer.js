@@ -1,85 +1,80 @@
-// =========================================================
-// APEXSIM — RENDERER (Unified Version with TEST Overlays)
-// =========================================================
-// Handles drawing the simulation: grid, units, overlays.
-// =========================================================
+// APEXSIM Renderer — Grid + Units + Camera
 
 window.APEXSIM = window.APEXSIM || {};
 
-window.APEXSIM.Renderer = (function () {
+APEXSIM.Renderer = {
+    canvas: null,
+    ctx: null,
+    _showGrid: true,
 
-    const gridSize = 32;
+    attachCanvas(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext("2d");
+        console.log("APEXSIM.Renderer — Canvas attached.");
+    },
 
-    // =========================================================
-    // GRID
-    // =========================================================
-    function drawGrid(ctx, width, height) {
-        ctx.strokeStyle = "#333";
-        ctx.lineWidth = 1;
+    setGridVisible(visible) {
+        this._showGrid = !!visible;
+    },
 
-        for (let x = 0; x < width; x += gridSize) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, height);
-            ctx.stroke();
-        }
+    draw() {
+        if (!this.ctx || !this.canvas) return;
 
-        for (let y = 0; y < height; y += gridSize) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(width, y);
-            ctx.stroke();
-        }
-    }
+        const ctx = this.ctx;
+        const w = this.canvas.width;
+        const h = this.canvas.height;
 
-    // =========================================================
-    // UNITS
-    // =========================================================
-    function drawUnits(ctx) {
-        const units = window.APEXSIM.Core.getUnits();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, w, h);
 
-        for (let unit of units) {
-            if (!unit.x || !unit.y) continue;
+        // Camera
+        const tileSize = 16;
+        ctx.translate(w / 2, h / 2);
+        ctx.scale(APEXSIM.Camera.zoom, APEXSIM.Camera.zoom);
+        ctx.translate(-w / 2, -h / 2);
+        ctx.translate(-APEXSIM.Camera.x, -APEXSIM.Camera.y);
 
-            // Base body
-            ctx.fillStyle = unit.color || "cyan";
-            ctx.fillRect(unit.x - 10, unit.y - 10, 20, 20);
+        // Background
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(0, 0, w, h);
 
-            // Stance indicator
-            if (unit.stance) {
-                ctx.fillStyle = "yellow";
-                ctx.fillRect(unit.x - 3, unit.y - 20, 6, 6);
+        // Grid
+        if (this._showGrid) {
+            ctx.strokeStyle = "rgba(40, 60, 80, 0.6)";
+            ctx.lineWidth = 1;
+            for (let x = 0; x < w; x += tileSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, h);
+                ctx.stroke();
+            }
+            for (let y = 0; y < h; y += tileSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
             }
         }
-    }
 
-    // =========================================================
-    // PUBLIC API
-    // =========================================================
-    return {
+        // Units
+        const units = (APEXSIM.Engine && APEXSIM.Engine.units) || [];
+        for (let i = 0; i < units.length; i++) {
+            const u = units[i];
+            const px = u.x * tileSize;
+            const py = u.y * tileSize;
 
-        draw() {
-            const ctx = window.APEXSIM.UI.getContext();
-            if (!ctx) return;
+            // Base square
+            ctx.fillStyle = "#00c8ff";
+            ctx.fillRect(px - 6, py - 6, 12, 12);
 
-            const canvas = ctx.canvas;
-
-            // Clear
-            window.APEXSIM.UI.clear();
-
-            // Grid
-            drawGrid(ctx, canvas.width, canvas.height);
-
-            // Units
-            drawUnits(ctx);
-
-            // =====================================================
-            // TEST SUBSYSTEM OVERLAYS (TACTICAL + DEBUG)
-            // =====================================================
-            if (window.APEXSIM.Test && window.APEXSIM.Test.drawOverlays) {
-                window.APEXSIM.Test.drawOverlays(ctx);
-            }
+            // Top marker
+            ctx.fillStyle = "#ffd84a";
+            ctx.fillRect(px - 3, py - 10, 6, 4);
         }
-    };
 
-})();
+        // Debug overlay
+        if (APEXSIM.Debug && APEXSIM.Debug._visible) {
+            APEXSIM.Debug.draw(ctx, w, h);
+        }
+    }
+};
