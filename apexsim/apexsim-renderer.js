@@ -1,13 +1,6 @@
 // =========================================================
-// APEXSIM — Renderer (v8.1)
-// =========================================================
-// Handles:
-// - Canvas transforms
-// - Camera zoom + offset
-// - World rendering (APEXWORLD v1.0)
-// - Grid rendering
-// - Unit rendering
-// - Debug overlay
+// APEXSIM.Renderer — Liminal Engine v8.2
+// Clean, deterministic, camera-aware, grid-aware renderer
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -17,131 +10,166 @@ APEXSIM.Renderer = {
     canvas: null,
     ctx: null,
 
-    // Grid toggle (controlled by UI panel)
-    _showGrid: true,
+    showGrid: true,
+    showDebug: false,
 
-    // Attach canvas from UI layer
-    attachCanvas(canvasElement) {
-        this.canvas = canvasElement;
-        this.ctx = canvasElement.getContext("2d");
+    camera: {
+        x: 0,
+        y: 0,
+        zoom: 1
+    },
+
+    init(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext("2d");
+
+        if (!this.ctx) {
+            console.error("APEXSIM.Renderer — Failed to get 2D context.");
+            return;
+        }
 
         console.log("APEXSIM.Renderer — Canvas attached.");
     },
 
-    // Called by UI panel
-    setGridVisible(visible) {
-        this._showGrid = !!visible;
-    },
-
-    // Main draw loop (called every frame from index.html)
+    // Called every frame by index.html bootstrap
     draw() {
-        if (!this.ctx || !this.canvas) return;
+        if (!this.ctx) return;
 
         const ctx = this.ctx;
-        const w = this.canvas.width;
-        const h = this.canvas.height;
+        const cam = this.camera;
 
-        // Reset transform
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.save();
 
         // Clear screen
-        ctx.clearRect(0, 0, w, h);
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Fill background
-        ctx.fillStyle = "#000000";
-        ctx.fillRect(0, 0, w, h);
+        // Apply camera transform
+        ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+        ctx.scale(cam.zoom, cam.zoom);
+        ctx.translate(-cam.x, -cam.y);
 
-        // =====================================================
-        // CAMERA TRANSFORM
-        // =====================================================
-        ctx.translate(w / 2, h / 2);
-        ctx.scale(APEXSIM.Camera.zoom, APEXSIM.Camera.zoom);
-        ctx.translate(-w / 2, -h / 2);
-
-        ctx.translate(-APEXSIM.Camera.x, -APEXSIM.Camera.y);
-
-        // =====================================================
-        // WORLD RENDERING (APEXWORLD v1.0)
-        // =====================================================
-        if (window.APEXWORLD && APEXWORLD.Renderer) {
-            APEXWORLD.Renderer.draw(ctx);
+        // Draw grid
+        if (this.showGrid) {
+            this._drawGrid();
         }
 
-        // =====================================================
-        // GRID RENDERING
-        // =====================================================
-        if (this._showGrid) {
-            this._drawGrid(ctx, w, h);
+        // Draw units
+        this._drawUnits();
+
+        // Debug overlay
+        if (this.showDebug) {
+            this._drawDebug();
         }
 
-        // =====================================================
-        // UNIT RENDERING
-        // =====================================================
-        this._drawUnits(ctx);
-
-        // =====================================================
-        // DEBUG OVERLAY
-        // =====================================================
-        if (APEXSIM.Debug && APEXSIM.Debug._visible) {
-            APEXSIM.Debug.draw(ctx, w, h);
-        }
+        ctx.restore();
     },
 
-    // =========================================================
-    // Draw grid
-    // =========================================================
-    _drawGrid(ctx, w, h) {
-        const tile = 16;
+    // =====================================================
+    // GRID
+    // =====================================================
 
-        ctx.strokeStyle = "rgba(40, 60, 80, 0.6)";
+    _drawGrid() {
+        const ctx = this.ctx;
+        const size = 32; // world tile size
+
+        ctx.strokeStyle = "rgba(255,255,255,0.05)";
         ctx.lineWidth = 1;
 
-        // Vertical lines
-        for (let x = 0; x < w; x += tile) {
+        const width = this.canvas.width * 2;
+        const height = this.canvas.height * 2;
+
+        for (let x = -width; x < width; x += size) {
             ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, h);
+            ctx.moveTo(x, -height);
+            ctx.lineTo(x, height);
             ctx.stroke();
         }
 
-        // Horizontal lines
-        for (let y = 0; y < h; y += tile) {
+        for (let y = -height; y < height; y += size) {
             ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(0 + w, y);
+            ctx.moveTo(-width, y);
+            ctx.lineTo(width, y);
             ctx.stroke();
         }
     },
 
-    // =========================================================
-    // Draw units
-    // =========================================================
-    _drawUnits(ctx) {
-        const units = (APEXSIM.Engine && APEXSIM.Engine.units) || [];
-        const tile = 16;
+    // =====================================================
+    // UNITS
+    // =====================================================
 
-        for (let i = 0; i < units.length; i++) {
-            const u = units[i];
+    _drawUnits() {
+        const Engine = window.APEXSIM && APEXSIM.Engine;
+        if (!Engine || !Engine.units) return;
 
-            const px = u.x * tile;
-            const py = u.y * tile;
+        const ctx = this.ctx;
 
-            // Base body
-            ctx.fillStyle = "#00c8ff";
-            ctx.fillRect(px - 6, py - 6, 12, 12);
+        for (let u of Engine.units) {
+            ctx.fillStyle = "#00eaff";
+            ctx.beginPath();
+            ctx.arc(u.x * 32, u.y * 32, 6, 0, Math.PI * 2);
+            ctx.fill();
 
-            // Top marker
-            ctx.fillStyle = "#ffd84a";
-            ctx.fillRect(px - 3, py - 10, 6, 4);
-
-            // Optional: velocity line (for debugging movement)
-            if (APEXSIM.Debug && APEXSIM.Debug._visible) {
-                ctx.strokeStyle = "#ff4444";
-                ctx.beginPath();
-                ctx.moveTo(px, py);
-                ctx.lineTo(px + u.vx * 4, py + u.vy * 4);
-                ctx.stroke();
-            }
+            // Velocity vector
+            ctx.strokeStyle = "rgba(0,255,255,0.5)";
+            ctx.beginPath();
+            ctx.moveTo(u.x * 32, u.y * 32);
+            ctx.lineTo(
+                (u.x + u.vx * 0.1) * 32,
+                (u.y + u.vy * 0.1) * 32
+            );
+            ctx.stroke();
         }
+    },
+
+    // =====================================================
+    // DEBUG OVERLAY
+    // =====================================================
+
+    _drawDebug() {
+        const Engine = window.APEXSIM && APEXSIM.Engine;
+        if (!Engine || !Engine.units) return;
+
+        const ctx = this.ctx;
+
+        ctx.fillStyle = "rgba(255,255,255,0.8)";
+        ctx.font = "14px monospace";
+
+        let y = 20;
+
+        ctx.fillText(`Units: ${Engine.units.length}`, 20, y);
+        y += 20;
+
+        ctx.fillText(`Running: ${Engine._running}`, 20, y);
+        y += 20;
+
+        ctx.fillText(`Speed: ${Engine._speed.toFixed(2)}x`, 20, y);
+        y += 20;
+
+        ctx.fillText(`Step Requested: ${Engine._stepRequested}`, 20, y);
+    },
+
+    // =====================================================
+    // CONTROL PANEL HOOKS
+    // =====================================================
+
+    setGridVisible(v) {
+        this.showGrid = !!v;
+    },
+
+    setDebugVisible(v) {
+        this.showDebug = !!v;
+    },
+
+    // =====================================================
+    // CAMERA API (used by apexsim-camera.js)
+    // =====================================================
+
+    setCamera(x, y) {
+        this.camera.x = x;
+        this.camera.y = y;
+    },
+
+    setZoom(z) {
+        this.camera.zoom = Math.max(0.1, Math.min(z, 5));
     }
 };
