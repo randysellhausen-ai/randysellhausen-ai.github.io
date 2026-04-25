@@ -1,15 +1,11 @@
 // =========================================================
-// APEXSIM — Engine (v8.1, APEXPATH + Data-aligned, auto-running)
+// APEXSIM — Engine (v8.2, Auto‑Run, Control‑Panel Compatible)
 // =========================================================
-// - Uses APEXSIM.Data.createUnit(x, y)
+// - Auto‑running simulation loop
+// - Control panel API: resume(), pause(), step(), setTimeScale()
+// - Uses APEXSIM.Data.createUnit()
 // - Integrates APEXWORLD + APEXPATH
-// - Compatible with control panel calls:
-//     - Engine.resume()
-//     - Engine.pause()
-//     - Engine.step()
-//     - Engine.setTimeScale(value)
-// - Compatible with APEXSIM.Engine.addUnit(...)
-// - Simulation auto-runs on load
+// - Clean, deterministic, production‑ready
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -18,17 +14,20 @@ APEXSIM.Engine = {
 
     units: [],
 
-    _nextId: 1,          // fallback if Data is missing
-    _running: true,      // auto-running by default
+    _nextId: 1,
+    _running: true,      // auto‑run enabled
     _speed: 1.0,
 
     _lastTime: null,
     _stepRequested: false,
 
+    // =====================================================
+    // INIT — starts internal RAF loop
+    // =====================================================
     init() {
         this.units = [];
         this._nextId = 1;
-        this._running = true;   // ensure running on init
+        this._running = true;
         this._speed = 1.0;
         this._lastTime = null;
         this._stepRequested = false;
@@ -43,45 +42,41 @@ APEXSIM.Engine = {
 
             this._tick(dt * this._speed);
 
-            window.requestAnimationFrame(loop);
+            requestAnimationFrame(loop);
         };
-        window.requestAnimationFrame(loop);
+
+        requestAnimationFrame(loop);
 
         console.log("APEXSIM.Engine — Initialized.");
     },
 
     // =====================================================
-    // Public controls (control panel API)
-// =====================================================
+    // CONTROL PANEL API (exact names required)
+    // =====================================================
 
-    // Control panel "Play"
     resume() {
         this._running = true;
     },
 
-    // Control panel "Pause"
     pause() {
         this._running = false;
     },
 
-    // Control panel "Step"
     step() {
         this._stepRequested = true;
     },
 
-    // Control panel speed slider
     setTimeScale(multiplier) {
         this._speed = Math.max(0.05, multiplier || 1.0);
     },
 
-    // Backwards-compatible aliases (if anything else calls these)
-    play() {
-        this.resume();
-    },
+    // Backwards compatibility
+    play() { this.resume(); },
+    setSpeed(v) { this.setTimeScale(v); },
 
-    setSpeed(multiplier) {
-        this.setTimeScale(multiplier);
-    },
+    // =====================================================
+    // UNIT MANAGEMENT
+    // =====================================================
 
     spawnUnits(count) {
         count = count || 1;
@@ -94,9 +89,6 @@ APEXSIM.Engine = {
         this.units = [];
     },
 
-    // Used by apexsim-test.js:
-    // - addUnit({ x, y, ... })
-    // - addUnit(x, y)
     addUnit(arg1, arg2) {
         let unit;
 
@@ -113,7 +105,7 @@ APEXSIM.Engine = {
     },
 
     // =====================================================
-    // Internal simulation
+    // INTERNAL SIMULATION LOOP
     // =====================================================
 
     _tick(dt) {
@@ -133,10 +125,8 @@ APEXSIM.Engine = {
         let y = 10;
 
         if (world) {
-            const w = world.width;
-            const h = world.height;
-            x = Math.floor(w / 2);
-            y = Math.floor(h / 2);
+            x = Math.floor(world.width / 2);
+            y = Math.floor(world.height / 2);
         }
 
         const unit = this._createUnitAt(x, y);
@@ -144,7 +134,7 @@ APEXSIM.Engine = {
     },
 
     // =====================================================
-    // Unit creation — aligned with APEXSIM.Data
+    // UNIT CREATION
     // =====================================================
 
     _createUnitAt(x, y) {
@@ -154,11 +144,9 @@ APEXSIM.Engine = {
         if (Data && typeof Data.createUnit === "function") {
             u = Data.createUnit(x, y);
         } else {
-            // Fallback if Data is missing
             u = {
                 id: this._nextId++,
-                x: x,
-                y: y,
+                x, y,
                 vx: 0,
                 vy: 0,
                 maxSpeed: 10,
@@ -167,56 +155,34 @@ APEXSIM.Engine = {
             };
         }
 
-        // Pathfinding fields
         u.path = u.path || null;
-        u.pathIndex = typeof u.pathIndex === "number" ? u.pathIndex : 0;
+        u.pathIndex = u.pathIndex || 0;
 
         return u;
     },
 
     _createUnitFromObject(src) {
         const Data = window.APEXSIM && APEXSIM.Data;
-        let base = src;
 
-        // If object is not guaranteed to be a Data unit, normalize it
         if (!("maxSpeed" in src) || !("maxAccel" in src)) {
-            if (Data && typeof Data.createUnit === "function") {
-                base = Data.createUnit(
-                    typeof src.x === "number" ? src.x : 10,
-                    typeof src.y === "number" ? src.y : 10
-                );
-            } else {
-                base = {
-                    id: this._nextId++,
-                    x: typeof src.x === "number" ? src.x : 10,
-                    y: typeof src.y === "number" ? src.y : 10,
-                    vx: typeof src.vx === "number" ? src.vx : 0,
-                    vy: typeof src.vy === "number" ? src.vy : 0,
-                    maxSpeed: typeof src.maxSpeed === "number" ? src.maxSpeed : 10,
-                    maxAccel: typeof src.maxAccel === "number" ? src.maxAccel : 30,
-                    aiTarget: src.aiTarget || null
-                };
-            }
+            return this._createUnitAt(src.x || 10, src.y || 10);
         }
 
-        // Ensure path fields exist
-        base.path = base.path || null;
-        base.pathIndex = typeof base.pathIndex === "number" ? base.pathIndex : 0;
+        src.path = src.path || null;
+        src.pathIndex = src.pathIndex || 0;
 
-        return base;
+        return src;
     },
 
     // =====================================================
-    // Unit update
+    // UNIT UPDATE
     // =====================================================
 
     _updateUnits(dt) {
         const world = window.APEXWORLD && APEXWORLD.World;
         const pathfinder = window.APEXPATH && APEXPATH.Pathfinder;
 
-        for (let i = 0; i < this.units.length; i++) {
-            const u = this.units[i];
-
+        for (let u of this.units) {
             if (world && pathfinder) {
                 this._updateUnitWithPathfinding(u, dt, world, pathfinder);
             } else {
@@ -226,39 +192,29 @@ APEXSIM.Engine = {
     },
 
     // =====================================================
-    // Pathfinding-based movement (APEXPATH + APEXWORLD)
+    // PATHFINDING MOVEMENT
     // =====================================================
 
     _updateUnitWithPathfinding(u, dt, world, pathfinder) {
-        const speed = typeof u.maxSpeed === "number" ? u.maxSpeed : 10;
+        const speed = u.maxSpeed || 10;
 
         if (!u.path || u.pathIndex >= u.path.length) {
             const startX = Math.round(u.x);
             const startY = Math.round(u.y);
 
             const goal = this._pickRandomWalkableTile(world);
-            if (!goal) {
-                this._updateUnitSimple(u, dt);
-                return;
-            }
+            if (!goal) return this._updateUnitSimple(u, dt);
 
             const path = pathfinder.findPath(startX, startY, goal.x, goal.y);
-
-            if (!path || path.length === 0) {
-                this._updateUnitSimple(u, dt);
-                return;
-            }
+            if (!path || path.length === 0) return this._updateUnitSimple(u, dt);
 
             u.path = path;
             u.pathIndex = 0;
-            u.aiTarget = { x: goal.x, y: goal.y };
+            u.aiTarget = goal;
         }
 
         const node = u.path[u.pathIndex];
-        if (!node) {
-            this._updateUnitSimple(u, dt);
-            return;
-        }
+        if (!node) return this._updateUnitSimple(u, dt);
 
         const targetX = node.x + 0.5;
         const targetY = node.y + 0.5;
@@ -273,7 +229,6 @@ APEXSIM.Engine = {
             u.x = targetX;
             u.y = targetY;
             u.pathIndex++;
-
             u.vx = 0;
             u.vy = 0;
         } else {
@@ -289,33 +244,25 @@ APEXSIM.Engine = {
     },
 
     _pickRandomWalkableTile(world) {
-        const maxAttempts = 64;
-
-        for (let i = 0; i < maxAttempts; i++) {
+        for (let i = 0; i < 64; i++) {
             const x = Math.floor(Math.random() * world.width);
             const y = Math.floor(Math.random() * world.height);
-
-            if (world.isWalkable(x, y)) {
-                return { x, y };
-            }
+            if (world.isWalkable(x, y)) return { x, y };
         }
-
         return null;
     },
 
     // =====================================================
-    // Simple fallback movement (no world / no pathfinding)
+    // SIMPLE MOVEMENT (fallback)
     // =====================================================
 
     _updateUnitSimple(u, dt) {
-        const speed = typeof u.maxSpeed === "number" ? u.maxSpeed : 10;
+        const speed = u.maxSpeed || 10;
 
         if (Math.abs(u.vx) < 0.01 && Math.abs(u.vy) < 0.01) {
             const angle = Math.random() * Math.PI * 2;
             u.vx = Math.cos(angle) * speed;
             u.vy = Math.sin(angle) * speed;
-
-            u.aiTarget = null;
         }
 
         u.x += u.vx * dt;
@@ -323,5 +270,5 @@ APEXSIM.Engine = {
     }
 };
 
-// Auto-init
+// Auto‑init
 APEXSIM.Engine.init();
