@@ -26,12 +26,15 @@ window.APEXSIM.Test = (function () {
                 y: 150 + Math.random() * 300,
                 vx: (Math.random() - 0.5) * 40,
                 vy: (Math.random() - 0.5) * 40,
-                stance: ["aggressive", "defensive", "neutral"][Math.floor(Math.random() * 3)],
-                selected: false
+                stance: ["aggressive", "neutral", "defensive"][Math.floor(Math.random() * 3)],
+                selected: false,
+                color: "cyan"
             };
 
             units.push(unit);
-            window.APEXSIM.Core.addUnit(unit);
+            if (window.APEXSIM.Core && window.APEXSIM.Core.addUnit) {
+                window.APEXSIM.Core.addUnit(unit);
+            }
         }
     }
 
@@ -41,6 +44,7 @@ window.APEXSIM.Test = (function () {
     function cycleStance(unit, dir) {
         const order = ["aggressive", "neutral", "defensive"];
         let idx = order.indexOf(unit.stance);
+        if (idx === -1) idx = 1; // default to neutral
         idx = (idx + dir + order.length) % order.length;
         unit.stance = order[idx];
     }
@@ -93,7 +97,7 @@ window.APEXSIM.Test = (function () {
         ctx.arc(selectedUnit.x, selectedUnit.y, 80, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Facing cone
+        // Facing cone (simple forward arc)
         ctx.fillStyle = "rgba(255,255,0,0.2)";
         ctx.beginPath();
         ctx.moveTo(selectedUnit.x, selectedUnit.y);
@@ -132,7 +136,11 @@ window.APEXSIM.Test = (function () {
         if (selectedUnit) {
             ctx.fillText("Selected: " + selectedUnit.id, 10, 60);
             ctx.fillText("Stance: " + selectedUnit.stance, 10, 80);
-            ctx.fillText("Pos: (" + selectedUnit.x.toFixed(1) + ", " + selectedUnit.y.toFixed(1) + ")", 10, 100);
+            ctx.fillText(
+                "Pos: (" + selectedUnit.x.toFixed(1) + ", " + selectedUnit.y.toFixed(1) + ")",
+                10,
+                100
+            );
         }
 
         ctx.restore();
@@ -143,15 +151,17 @@ window.APEXSIM.Test = (function () {
     // =========================================================
     return {
 
+        // Called from index.html boot
         spawnTestUnit() {
-            // Instead of 1 unit, spawn 20
             spawnUnits(20);
         },
 
+        // Optional: if you want selection wired via UI
         attachCanvas(canvas) {
             attachSelection(canvas);
         },
 
+        // Called from Renderer.draw()
         drawOverlays(ctx) {
             drawTactical(ctx);
             drawDebug(ctx);
