@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>APEXSIM Test</title>
+    <style>
+        body {
+            background: #000;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ========================================================= -->
+    <!-- APEXSIM CANVAS (STEP 3)                                   -->
+    <!-- ========================================================= -->
+    <canvas id="apexsim-canvas" width="800" height="600" style="background:#111;"></canvas>
+
+    <!-- ========================================================= -->
+    <!-- APEXSIM ENGINE FILES                                      -->
+    <!-- ========================================================= -->
+    <script src="apexsim/apexsim.js"></script>
+    <script src="apexsim/apexsim-core.js"></script>
+    <script src="apexsim/apexsim-engine.js"></script>
+    <script src="apexsim/apexsim-systems.js"></script>
+    <script src="apexsim/apexsim-modules.js"></script>
+    <script src="apexsim/apexsim-ui.js"></script>
+    <script src="apexsim/apexsim-renderer.js"></script>
+    <script src="apexsim/apexsim-physics.js"></script>
+    <script src="apexsim/apexsim-data.js"></script>
+    <script src="apexsim/apexsim-debug.js"></script>
+    <script src="apexsim/stance/apex-stance.js"></script>
+    <script src="apexsim/apexsim-test.js"></script>
+
+    <!-- ========================================================= -->
+    <!-- APEXSIM BOOT SEQUENCE (STEP 2)                            -->
+    <!-- ========================================================= -->
+    <script>
+        // Attach canvas
+        const canvas = document.getElementById("apexsim-canvas");
+        window.APEXSIM.UI.attachCanvas(canvas);
+
+        // Spawn test unit
+        window.APEXSIM.Test.spawnTestUnit();
+
+        // Main simulation loop
+        function loop() {
+            window.APEXSIM.Engine.update();
+            window.APEXSIM.Renderer.draw();
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
+
+</body>
+</html>
