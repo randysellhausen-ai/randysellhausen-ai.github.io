@@ -1,5 +1,5 @@
 // =========================================================
-// APEXSIM — Engine (v8.1, with APEXPATH + addUnit API)
+// APEXSIM — Engine (v8.1, APEXPATH + Data-aligned)
 // =========================================================
 // Responsibilities:
 // - Owns unit list
@@ -7,7 +7,7 @@
 // - Time scaling (speed slider)
 // - Spawning / clearing units
 // - Integrates with APEXWORLD + APEXPATH
-// - Units pathfind across the world grid
+// - Uses APEXSIM.Data.createUnit(...) for unit schema
 // - Compatible with APEXSIM.Engine.addUnit(...)
 // =========================================================
 
@@ -17,7 +17,7 @@ APEXSIM.Engine = {
 
     units: [],
 
-    _nextId: 1,
+    _nextId: 1,          // fallback if Data is missing
     _running: false,
     _speed: 1.0,
 
@@ -80,8 +80,7 @@ APEXSIM.Engine = {
         this.units = [];
     },
 
-    // Legacy / external API used by apexsim-test.js
-    // Supports:
+    // Used by apexsim-test.js:
     // - addUnit({ x, y, ... })
     // - addUnit(x, y)
     addUnit(arg1, arg2) {
@@ -130,41 +129,72 @@ APEXSIM.Engine = {
         this.units.push(unit);
     },
 
+    // =====================================================
+    // Unit creation — aligned with APEXSIM.Data
+    // =====================================================
+
     _createUnitAt(x, y) {
-        return {
-            id: this._nextId++,
+        const Data = window.APEXSIM && APEXSIM.Data;
+        let u;
 
-            x: x + Math.random() * 0.1,
-            y: y + Math.random() * 0.1,
+        if (Data && typeof Data.createUnit === "function") {
+            u = Data.createUnit(x, y);
+        } else {
+            // Fallback if Data is missing
+            u = {
+                id: this._nextId++,
+                x: x,
+                y: y,
+                vx: 0,
+                vy: 0,
+                maxSpeed: 10,
+                maxAccel: 30,
+                aiTarget: null
+            };
+        }
 
-            vx: 0,
-            vy: 0,
+        // Pathfinding fields
+        u.path = u.path || null;
+        u.pathIndex = typeof u.pathIndex === "number" ? u.pathIndex : 0;
 
-            speed: 4 + Math.random() * 3,
-
-            path: null,
-            pathIndex: 0,
-            aiTarget: null
-        };
+        return u;
     },
 
     _createUnitFromObject(src) {
-        return {
-            id: this._nextId++,
+        const Data = window.APEXSIM && APEXSIM.Data;
+        let base = src;
 
-            x: typeof src.x === "number" ? src.x : 10,
-            y: typeof src.y === "number" ? src.y : 10,
+        // If object is not guaranteed to be a Data unit, normalize it
+        if (!("maxSpeed" in src) || !("maxAccel" in src)) {
+            if (Data && typeof Data.createUnit === "function") {
+                base = Data.createUnit(
+                    typeof src.x === "number" ? src.x : 10,
+                    typeof src.y === "number" ? src.y : 10
+                );
+            } else {
+                base = {
+                    id: this._nextId++,
+                    x: typeof src.x === "number" ? src.x : 10,
+                    y: typeof src.y === "number" ? src.y : 10,
+                    vx: typeof src.vx === "number" ? src.vx : 0,
+                    vy: typeof src.vy === "number" ? src.vy : 0,
+                    maxSpeed: typeof src.maxSpeed === "number" ? src.maxSpeed : 10,
+                    maxAccel: typeof src.maxAccel === "number" ? src.maxAccel : 30,
+                    aiTarget: src.aiTarget || null
+                };
+            }
+        }
 
-            vx: typeof src.vx === "number" ? src.vx : 0,
-            vy: typeof src.vy === "number" ? src.vy : 0,
+        // Ensure path fields exist
+        base.path = base.path || null;
+        base.pathIndex = typeof base.pathIndex === "number" ? base.pathIndex : 0;
 
-            speed: typeof src.speed === "number" ? src.speed : (4 + Math.random() * 3),
-
-            path: src.path || null,
-            pathIndex: typeof src.pathIndex === "number" ? src.pathIndex : 0,
-            aiTarget: src.aiTarget || null
-        };
+        return base;
     },
+
+    // =====================================================
+    // Unit update
+    // =====================================================
 
     _updateUnits(dt) {
         const world = window.APEXWORLD && APEXWORLD.World;
@@ -186,6 +216,8 @@ APEXSIM.Engine = {
     // =====================================================
 
     _updateUnitWithPathfinding(u, dt, world, pathfinder) {
+        const speed = typeof u.maxSpeed === "number" ? u.maxSpeed : 10;
+
         if (!u.path || u.pathIndex >= u.path.length) {
             const startX = Math.round(u.x);
             const startY = Math.round(u.y);
@@ -221,7 +253,7 @@ APEXSIM.Engine = {
         const dy = targetY - u.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 0.0001;
 
-        const moveDist = u.speed * dt;
+        const moveDist = speed * dt;
 
         if (dist <= moveDist) {
             u.x = targetX;
@@ -234,8 +266,8 @@ APEXSIM.Engine = {
             const nx = dx / dist;
             const ny = dy / dist;
 
-            u.vx = nx * u.speed;
-            u.vy = ny * u.speed;
+            u.vx = nx * speed;
+            u.vy = ny * speed;
 
             u.x += u.vx * dt;
             u.y += u.vy * dt;
@@ -262,7 +294,7 @@ APEXSIM.Engine = {
     // =====================================================
 
     _updateUnitSimple(u, dt) {
-        const speed = u.speed;
+        const speed = typeof u.maxSpeed === "number" ? u.maxSpeed : 10;
 
         if (Math.abs(u.vx) < 0.01 && Math.abs(u.vy) < 0.01) {
             const angle = Math.random() * Math.PI * 2;
