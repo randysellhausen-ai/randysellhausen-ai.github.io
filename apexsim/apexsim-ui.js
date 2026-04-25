@@ -1,48 +1,105 @@
 // =========================================================
-// APEXSIM — UI
+// APEXSIM.UI — Liminal Engine v8.2
+// Core UI system: canvas attach, input, layout, HUD bootstrap
 // =========================================================
-// UI hooks for rendering, debugging, and user interaction.
+// Responsibilities:
+// - Attach the main canvas to the renderer
+// - Initialize UI subsystems (input, layout, panels, HUD)
+// - Provide a single, stable entry point: attachCanvas(canvas)
+// - Future‑proof for additional UI modules
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
 
-window.APEXSIM.UI = (function () {
+APEXSIM.UI = {
 
-    let canvas = null;
-    let ctx = null;
+    canvas: null,
+    attached: false,
 
-    return {
-
-        // Attach a canvas for rendering
-        attachCanvas(canvasElement) {
-            canvas = canvasElement;
-            ctx = canvas.getContext("2d");
-
-            // ⭐ CRITICAL: Hand canvas to the Renderer
-            if (window.APEXSIM && APEXSIM.Renderer && typeof APEXSIM.Renderer.attachCanvas === "function") {
-                APEXSIM.Renderer.attachCanvas(canvasElement);
-            } else {
-                console.error("APEXSIM.Renderer.attachCanvas is missing.");
-            }
-        },
-
-        // Clear the canvas
-        clear() {
-            if (!ctx) return;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        },
-
-        // Draw a simple debug dot
-        drawDot(x, y, color = "red") {
-            if (!ctx) return;
-            ctx.fillStyle = color;
-            ctx.fillRect(x - 2, y - 2, 4, 4);
-        },
-
-        // Expose context for renderer
-        getContext() {
-            return ctx;
+    // =====================================================
+    // PUBLIC ENTRY POINT — called from index.html
+    // =====================================================
+    attachCanvas(canvas) {
+        if (!canvas) {
+            console.error("APEXSIM.UI.attachCanvas — No canvas provided.");
+            return;
         }
-    };
 
-})();
+        this.canvas = canvas;
+
+        // 1) Initialize renderer with this canvas
+        const Renderer = window.APEXSIM && APEXSIM.Renderer;
+        if (!Renderer || typeof Renderer.init !== "function") {
+            console.error("APEXSIM.UI.attachCanvas — Renderer.init is not available.");
+            return;
+        }
+
+        Renderer.init(canvas);
+
+        // 2) Initialize UI subsystems
+        this._initInput();
+        this._initLayout();
+        this._initPanels();
+        this._initHUD();
+
+        this.attached = true;
+
+        console.log("APEXSIM.UI — Canvas attached and UI subsystems initialized.");
+    },
+
+    // =====================================================
+    // INPUT SYSTEM BOOTSTRAP
+    // =====================================================
+    _initInput() {
+        const Input = window.APEXUI && APEXUI.Input;
+        if (!Input || typeof Input.init !== "function") {
+            // Optional — not fatal
+            console.warn("APEXSIM.UI — APEXUI.Input not found or missing init().");
+            return;
+        }
+
+        Input.init(this.canvas);
+    },
+
+    // =====================================================
+    // LAYOUT SYSTEM BOOTSTRAP
+    // =====================================================
+    _initLayout() {
+        const Layout = window.APEXUI && APEXUI.Layout;
+        if (!Layout || typeof Layout.init !== "function") {
+            // Optional — not fatal
+            console.warn("APEXSIM.UI — APEXUI.Layout not found or missing init().");
+            return;
+        }
+
+        Layout.init();
+    },
+
+    // =====================================================
+    // PANELS SYSTEM BOOTSTRAP
+    // =====================================================
+    _initPanels() {
+        const Panels = window.APEXUI && APEXUI.Panels;
+        if (!Panels || typeof Panels.init !== "function") {
+            // Optional — not fatal
+            console.warn("APEXSIM.UI — APEXUI.Panels not found or missing init().");
+            return;
+        }
+
+        Panels.init();
+    },
+
+    // =====================================================
+    // HUD SYSTEM BOOTSTRAP
+    // =====================================================
+    _initHUD() {
+        const HUD = window.APEXUI && APEXUI.HUD;
+        if (!HUD || typeof HUD.init !== "function") {
+            // Optional — not fatal
+            console.warn("APEXSIM.UI — APEXUI.HUD not found or missing init().");
+            return;
+        }
+
+        HUD.init();
+    }
+};
