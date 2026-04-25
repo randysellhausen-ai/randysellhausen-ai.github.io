@@ -1,13 +1,52 @@
-// Control-layer wrapper for APEXSIM.Debug
-// Adds setDebugVisible used by the control panel.
+// =========================================================
+// APEXSIM.DebugControl — Liminal Engine v8.2
+// Centralized debug toggles + hooks for future debug modules
+// =========================================================
+// - Controls debug overlay visibility
+// - Provides a clean interface for future debug systems
+// - Works directly with APEXSIM.Renderer and APEXSIM.Engine
+// =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
-APEXSIM.Debug = APEXSIM.Debug || {};
 
-APEXSIM.Debug._visible = false;
+APEXSIM.DebugControl = {
 
-APEXSIM.Debug.setDebugVisible = function (visible) {
-    this._visible = !!visible;
+    init() {
+        const Renderer = window.APEXSIM && APEXSIM.Renderer;
+        const Engine = window.APEXSIM && APEXSIM.Engine;
+
+        if (!Renderer) {
+            console.error("APEXSIM.DebugControl — Renderer not found.");
+            return;
+        }
+        if (!Engine) {
+            console.error("APEXSIM.DebugControl — Engine not found.");
+            return;
+        }
+
+        // Debug overlay toggle (checkbox in control panel)
+        const debugCheckbox = document.getElementById("vc-render-debug");
+        if (debugCheckbox) {
+            debugCheckbox.addEventListener("change", () => {
+                Renderer.setDebugVisible(debugCheckbox.checked);
+            });
+        }
+
+        // Future expansion:
+        // - Engine state inspector
+        // - Unit inspector
+        // - Pathfinding visualizer
+        // - Physics debug
+        // - AI state debug
+        // - Event tracing
+
+        console.log("APEXSIM.DebugControl — Ready.");
+    }
 };
 
-// You can check APEXSIM.Debug._visible inside your existing debug rendering logic.
+// Auto‑init after DOM is ready
+document.addEventListener("DOMContentLoaded", () => {
+    if (window.APEXSIM && APEXSIM.DebugControl) {
+        APEXSIM.DebugControl.init();
+    }
+});
