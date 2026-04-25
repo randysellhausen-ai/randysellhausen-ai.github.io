@@ -1,21 +1,23 @@
-// Simple camera control object used by the control panel.
+// APEXSIM Camera — Pan + Zoom
 
 window.APEXSIM = window.APEXSIM || {};
-APEXSIM.Camera = APEXSIM.Camera || {};
 
-APEXSIM.Camera.zoom = 1;
+APEXSIM.Camera = {
+    x: 0,
+    y: 0,
+    zoom: 1,
 
-APEXSIM.Camera.zoomIn = function () {
-    this.zoom = Math.min(this.zoom * 1.1, 4);
+    zoomIn() {
+        this.zoom = Math.min(this.zoom * 1.1, 4);
+    },
+
+    zoomOut() {
+        this.zoom = Math.max(this.zoom / 1.1, 0.25);
+    },
+
+    reset() {
+        this.x = 0;
+        this.y = 0;
+        this.zoom = 1;
+    }
 };
-
-APEXSIM.Camera.zoomOut = function () {
-    this.zoom = Math.max(this.zoom / 1.1, 0.25);
-};
-
-APEXSIM.Camera.reset = function () {
-    this.zoom = 1;
-};
-
-// To fully wire this, apply APEXSIM.Camera.zoom in your renderer's transform.
-// For now, it's a clean, ready-to-use control surface.
