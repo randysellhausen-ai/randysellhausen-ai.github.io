@@ -1,14 +1,10 @@
 // =========================================================
-// APEXSIM — Engine (v8.1, APEXPATH + Data-aligned)
+// APEXSIM — Engine (v8.1, APEXPATH + Data-aligned, auto-running)
 // =========================================================
-// Responsibilities:
-// - Owns unit list
-// - Simulation loop (play / pause / step)
-// - Time scaling (speed slider)
-// - Spawning / clearing units
-// - Integrates with APEXWORLD + APEXPATH
-// - Uses APEXSIM.Data.createUnit(...) for unit schema
+// - Uses APEXSIM.Data.createUnit(x, y)
+// - Integrates APEXWORLD + APEXPATH
 // - Compatible with APEXSIM.Engine.addUnit(...)
+// - Simulation runs by default (no Play required)
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -18,7 +14,7 @@ APEXSIM.Engine = {
     units: [],
 
     _nextId: 1,          // fallback if Data is missing
-    _running: false,
+    _running: true,      // <-- auto-running by default
     _speed: 1.0,
 
     _lastTime: null,
@@ -27,7 +23,7 @@ APEXSIM.Engine = {
     init() {
         this.units = [];
         this._nextId = 1;
-        this._running = false;
+        this._running = true;   // <-- ensure running on init
         this._speed = 1.0;
         this._lastTime = null;
         this._stepRequested = false;
