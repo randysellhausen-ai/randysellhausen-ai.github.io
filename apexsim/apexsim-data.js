@@ -1,36 +1,20 @@
-// =========================================================
-// APEXSIM — DATA
-// =========================================================
-// Data helpers: IDs, RNG, tables, math utilities.
-// =========================================================
+// APEXSIM Data — Unit Templates
 
 window.APEXSIM = window.APEXSIM || {};
 
-window.APEXSIM.Data = (function () {
+APEXSIM.Data = {
+    nextId: 1,
 
-    let _idCounter = 1;
-
-    return {
-
-        // Generate unique IDs for units, effects, etc.
-        nextId() {
-            return _idCounter++;
-        },
-
-        // Random integer between min and max
-        randInt(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
-        },
-
-        // Random float
-        randFloat(min, max) {
-            return Math.random() * (max - min) + min;
-        },
-
-        // Clamp a value
-        clamp(value, min, max) {
-            return Math.max(min, Math.min(max, value));
-        }
-    };
-
-})();
+    createUnit(x, y) {
+        return {
+            id: this.nextId++,
+            x: x,
+            y: y,
+            vx: 0,
+            vy: 0,
+            maxSpeed: 10,
+            maxAccel: 30,
+            aiTarget: null
+        };
+    }
+};
