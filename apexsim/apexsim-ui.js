@@ -17,6 +17,13 @@ window.APEXSIM.UI = (function () {
         attachCanvas(canvasElement) {
             canvas = canvasElement;
             ctx = canvas.getContext("2d");
+
+            // ⭐ CRITICAL: Hand canvas to the Renderer
+            if (window.APEXSIM && APEXSIM.Renderer && typeof APEXSIM.Renderer.attachCanvas === "function") {
+                APEXSIM.Renderer.attachCanvas(canvasElement);
+            } else {
+                console.error("APEXSIM.Renderer.attachCanvas is missing.");
+            }
         },
 
         // Clear the canvas
