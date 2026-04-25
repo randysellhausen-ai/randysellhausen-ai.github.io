@@ -33,35 +33,69 @@
     <!-- MAIN SIMULATION CANVAS -->
     <canvas id="apexsim-canvas" width="1280" height="720"></canvas>
 
-    <!-- CORE ENGINE -->
+    <!-- CORE ENGINE ROOT -->
     <script src="apexcore.js"></script>
 
-    <!-- SIMULATION SUBSYSTEMS -->
+    <!-- APEXSIM CORE STACK (strict order) -->
+    <script src="apexsim/apexsim.js"></script>
+    <script src="apexsim/apexsim-core.js"></script>
+    <script src="apexsim/apexsim-engine.js"></script>
+    <script src="apexsim/apexsim-systems.js"></script>
+    <script src="apexsim/apexsim-modules.js"></script>
+    <script src="apexsim/apexsim-physics.js"></script>
+    <script src="apexsim/apexsim-data.js"></script>
+    <script src="apexsim/apexsim-ui.js"></script>
     <script src="apexsim/apexsim-renderer.js"></script>
+    <script src="apexsim/apexsim-debug.js"></script>
+    <script src="apexsim/stance/apex-stance.js"></script>
     <script src="apexsim/apexsim-test.js"></script>
 
-    <!-- UI SYSTEM -->
+    <!-- UI SYSTEM STACK -->
+    <script src="apexui/apexui-input.js"></script>
+    <script src="apexui/apexui-layout.js"></script>
+    <script src="apexui/apexui-panels.js"></script>
     <script src="apexui/apexui-hud.js"></script>
 
-    <!-- WORLD SYSTEM -->
+    <!-- WORLD SYSTEM STACK -->
+    <script src="apexworld/apexworld-config.js"></script>
     <script src="apexworld/apexworld-data.js"></script>
+    <script src="apexworld/apexworld-biomes.js"></script>
+    <script src="apexworld/apexworld-regions.js"></script>
+    <script src="apexworld/apexworld-terrain.js"></script>
 
-    <!-- GAME SYSTEM -->
+    <!-- GAME SYSTEM STACK -->
+    <script src="apexgame/apexgame-entities.js"></script>
+    <script src="apexgame/apexgame-rules.js"></script>
+    <script src="apexgame/apexgame-story.js"></script>
     <script src="apexgame/apexgame-events.js"></script>
 
     <!-- BOOTSTRAP -->
     <script>
         // Canvas
         const canvas = document.getElementById("apexsim-canvas");
-        window.APEXSIM.UI.attachCanvas(canvas);
 
-        // Spawn test units
-        window.APEXSIM.Test.spawnTestUnit();
+        // Attach canvas to UI
+        if (window.APEXSIM && window.APEXSIM.UI && typeof window.APEXSIM.UI.attachCanvas === "function") {
+            window.APEXSIM.UI.attachCanvas(canvas);
+        } else {
+            console.error("APEXSIM.UI.attachCanvas is not available.");
+        }
+
+        // Spawn test units (if test module is present)
+        if (window.APEXSIM && window.APEXSIM.Test && typeof window.APEXSIM.Test.spawnTestUnit === "function") {
+            window.APEXSIM.Test.spawnTestUnit();
+        } else {
+            console.warn("APEXSIM.Test.spawnTestUnit is not available.");
+        }
 
         // Main loop
         function loop() {
-            window.APEXSIM.Engine.update();
-            window.APEXSIM.Renderer.draw();
+            if (window.APEXSIM && window.APEXSIM.Engine && typeof window.APEXSIM.Engine.update === "function") {
+                window.APEXSIM.Engine.update();
+            }
+            if (window.APEXSIM && window.APEXSIM.Renderer && typeof window.APEXSIM.Renderer.draw === "function") {
+                window.APEXSIM.Renderer.draw();
+            }
             requestAnimationFrame(loop);
         }
 
