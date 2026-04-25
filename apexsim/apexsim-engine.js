@@ -1,5 +1,5 @@
 // =========================================================
-// APEXSIM — Engine (v8.1, with APEXPATH)
+// APEXSIM — Engine (v8.1, with APEXPATH + addUnit API)
 // =========================================================
 // Responsibilities:
 // - Owns unit list
@@ -8,6 +8,7 @@
 // - Spawning / clearing units
 // - Integrates with APEXWORLD + APEXPATH
 // - Units pathfind across the world grid
+// - Compatible with APEXSIM.Engine.addUnit(...)
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -31,7 +32,6 @@ APEXSIM.Engine = {
         this._lastTime = null;
         this._stepRequested = false;
 
-        // Start RAF loop
         const loop = (timestamp) => {
             const now = timestamp / 1000;
             if (this._lastTime === null) {
@@ -50,7 +50,7 @@ APEXSIM.Engine = {
     },
 
     // =====================================================
-    // Public controls (used by control panel)
+    // Public controls (used by control panel / tests)
     // =====================================================
 
     play() {
@@ -62,7 +62,6 @@ APEXSIM.Engine = {
     },
 
     step() {
-        // Run exactly one tick on next frame
         this._stepRequested = true;
     },
 
@@ -81,6 +80,25 @@ APEXSIM.Engine = {
         this.units = [];
     },
 
+    // Legacy / external API used by apexsim-test.js
+    // Supports:
+    // - addUnit({ x, y, ... })
+    // - addUnit(x, y)
+    addUnit(arg1, arg2) {
+        let unit;
+
+        if (typeof arg1 === "object" && arg1 !== null) {
+            unit = this._createUnitFromObject(arg1);
+        } else {
+            const x = typeof arg1 === "number" ? arg1 : 10;
+            const y = typeof arg2 === "number" ? arg2 : 10;
+            unit = this._createUnitAt(x, y);
+        }
+
+        this.units.push(unit);
+        return unit;
+    },
+
     // =====================================================
     // Internal simulation
     // =====================================================
@@ -88,7 +106,6 @@ APEXSIM.Engine = {
     _tick(dt) {
         if (!this._running && !this._stepRequested) return;
 
-        // Consume step request
         if (this._stepRequested) {
             this._stepRequested = false;
         }
@@ -97,40 +114,56 @@ APEXSIM.Engine = {
     },
 
     _spawnUnit() {
-        const tileSize = 16;
+        const world = window.APEXWORLD && APEXWORLD.World;
 
-        // Default spawn position: center of world if available
         let x = 10;
         let y = 10;
 
-        if (window.APEXWORLD && APEXWORLD.World) {
-            const w = APEXWORLD.World.width;
-            const h = APEXWORLD.World.height;
+        if (world) {
+            const w = world.width;
+            const h = world.height;
             x = Math.floor(w / 2);
             y = Math.floor(h / 2);
         }
 
-        const unit = {
+        const unit = this._createUnitAt(x, y);
+        this.units.push(unit);
+    },
+
+    _createUnitAt(x, y) {
+        return {
             id: this._nextId++,
 
-            // Position in tile coordinates (float)
             x: x + Math.random() * 0.1,
             y: y + Math.random() * 0.1,
 
-            // Velocity in tile units per second
             vx: 0,
             vy: 0,
 
-            // Movement speed (tiles per second)
             speed: 4 + Math.random() * 3,
 
-            // Pathfinding
             path: null,
             pathIndex: 0,
             aiTarget: null
         };
+    },
 
-        this.units.push(unit);
+    _createUnitFromObject(src) {
+        return {
+            id: this._nextId++,
+
+            x: typeof src.x === "number" ? src.x : 10,
+            y: typeof src.y === "number" ? src.y : 10,
+
+            vx: typeof src.vx === "number" ? src.vx : 0,
+            vy: typeof src.vy === "number" ? src.vy : 0,
+
+            speed: typeof src.speed === "number" ? src.speed : (4 + Math.random() * 3),
+
+            path: src.path || null,
+            pathIndex: typeof src.pathIndex === "number" ? src.pathIndex : 0,
+            aiTarget: src.aiTarget || null
+        };
     },
 
     _updateUnits(dt) {
@@ -153,14 +186,12 @@ APEXSIM.Engine = {
     // =====================================================
 
     _updateUnitWithPathfinding(u, dt, world, pathfinder) {
-        // If no path or finished, pick a new random goal
         if (!u.path || u.pathIndex >= u.path.length) {
             const startX = Math.round(u.x);
             const startY = Math.round(u.y);
 
             const goal = this._pickRandomWalkableTile(world);
             if (!goal) {
-                // Fallback to simple movement if no walkable tile
                 this._updateUnitSimple(u, dt);
                 return;
             }
@@ -168,7 +199,6 @@ APEXSIM.Engine = {
             const path = pathfinder.findPath(startX, startY, goal.x, goal.y);
 
             if (!path || path.length === 0) {
-                // No path found — fallback
                 this._updateUnitSimple(u, dt);
                 return;
             }
@@ -178,14 +208,12 @@ APEXSIM.Engine = {
             u.aiTarget = { x: goal.x, y: goal.y };
         }
 
-        // Follow current path
         const node = u.path[u.pathIndex];
         if (!node) {
             this._updateUnitSimple(u, dt);
             return;
         }
 
-        // Target center of tile
         const targetX = node.x + 0.5;
         const targetY = node.y + 0.5;
 
@@ -196,7 +224,6 @@ APEXSIM.Engine = {
         const moveDist = u.speed * dt;
 
         if (dist <= moveDist) {
-            // Snap to node and advance
             u.x = targetX;
             u.y = targetY;
             u.pathIndex++;
@@ -232,10 +259,9 @@ APEXSIM.Engine = {
 
     // =====================================================
     // Simple fallback movement (no world / no pathfinding)
-// =====================================================
+    // =====================================================
 
     _updateUnitSimple(u, dt) {
-        // If velocity is near zero, pick a new random direction
         const speed = u.speed;
 
         if (Math.abs(u.vx) < 0.01 && Math.abs(u.vy) < 0.01) {
