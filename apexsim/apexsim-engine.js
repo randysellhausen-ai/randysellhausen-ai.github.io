@@ -3,8 +3,13 @@
 // =========================================================
 // - Uses APEXSIM.Data.createUnit(x, y)
 // - Integrates APEXWORLD + APEXPATH
+// - Compatible with control panel calls:
+//     - Engine.resume()
+//     - Engine.pause()
+//     - Engine.step()
+//     - Engine.setTimeScale(value)
 // - Compatible with APEXSIM.Engine.addUnit(...)
-// - Simulation runs by default (no Play required)
+// - Simulation auto-runs on load
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -14,7 +19,7 @@ APEXSIM.Engine = {
     units: [],
 
     _nextId: 1,          // fallback if Data is missing
-    _running: true,      // <-- auto-running by default
+    _running: true,      // auto-running by default
     _speed: 1.0,
 
     _lastTime: null,
@@ -23,7 +28,7 @@ APEXSIM.Engine = {
     init() {
         this.units = [];
         this._nextId = 1;
-        this._running = true;   // <-- ensure running on init
+        this._running = true;   // ensure running on init
         this._speed = 1.0;
         this._lastTime = null;
         this._stepRequested = false;
@@ -46,23 +51,36 @@ APEXSIM.Engine = {
     },
 
     // =====================================================
-    // Public controls (used by control panel / tests)
-    // =====================================================
+    // Public controls (control panel API)
+// =====================================================
 
-    play() {
+    // Control panel "Play"
+    resume() {
         this._running = true;
     },
 
+    // Control panel "Pause"
     pause() {
         this._running = false;
     },
 
+    // Control panel "Step"
     step() {
         this._stepRequested = true;
     },
 
-    setSpeed(multiplier) {
+    // Control panel speed slider
+    setTimeScale(multiplier) {
         this._speed = Math.max(0.05, multiplier || 1.0);
+    },
+
+    // Backwards-compatible aliases (if anything else calls these)
+    play() {
+        this.resume();
+    },
+
+    setSpeed(multiplier) {
+        this.setTimeScale(multiplier);
     },
 
     spawnUnits(count) {
