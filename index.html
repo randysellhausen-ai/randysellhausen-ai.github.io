@@ -167,6 +167,11 @@
             window.APEXSIM.UI.attachCanvas(canvas);
         }
 
+        // Attach renderer to canvas (THIS WAS MISSING)
+        if (window.APEXSIM && window.APEXSIM.Renderer && typeof window.APEXSIM.Renderer.init === "function") {
+            window.APEXSIM.Renderer.init(canvas);
+        }
+
         // Initialize world (APEXWORLD v1)
         if (window.APEXSIM && window.APEXSIM.World && typeof window.APEXSIM.World.init === "function") {
             window.APEXSIM.World.init({
@@ -181,15 +186,9 @@
             window.APEXSIM.Test.spawnTestUnit();
         }
 
-        // Render loop
-        function loop() {
-            if (window.APEXSIM && window.APEXSIM.Renderer && typeof window.APEXSIM.Renderer.render === "function") {
-                window.APEXSIM.Renderer.render();
-            }
-            requestAnimationFrame(loop);
-        }
-
-        loop();
+        // NOTE:
+        // Engine already has its own RAF loop and calls Renderer.render()
+        // inside _tick(), so we do NOT need a second manual render loop here.
     </script>
 </body>
 </html>
