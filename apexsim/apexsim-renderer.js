@@ -1,12 +1,12 @@
 // =========================================================
-// APEXSIM.Renderer — Liminal Engine v8.2
+// APEXSIM.Renderer — Liminal Engine v8.2 (Corrected Full File)
 // =========================================================
 // Responsibilities:
 // - Attach canvas + context
 // - Render world (APEXWORLD v1)
 // - Render units
 // - Render debug overlay
-// - Integrate with camera
+// - Integrate with camera.state (REQUIRED)
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -31,8 +31,13 @@ APEXSIM.Renderer = {
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d");
 
-        // Camera reference
-        this.camera = APEXSIM.Camera;
+        // REQUIRED: camera must use .state
+        if (APEXSIM.Camera && APEXSIM.Camera.state) {
+            this.camera = APEXSIM.Camera.state;
+        } else {
+            console.error("APEXSIM.Renderer — Camera.state missing.");
+            this.camera = { x: 0, y: 0, zoom: 1 };
+        }
 
         console.log("APEXSIM.Renderer — Canvas attached.");
     },
@@ -41,14 +46,14 @@ APEXSIM.Renderer = {
     // MAIN RENDER LOOP ENTRY
     // -----------------------------------------------------
     render() {
-        if (!this.ctx) return;
+        if (!this.ctx || !this.camera) return;
 
         this._clear();
         this._applyCamera();
 
-        this._drawWorld();   // NEW — world tiles
-        this._drawUnits();   // existing
-        this._drawDebug();   // existing
+        this._drawWorld();
+        this._drawUnits();
+        this._drawDebug();
 
         this._restoreCamera();
     },
@@ -121,7 +126,6 @@ APEXSIM.Renderer = {
             ctx.arc(unit.x, unit.y, 4, 0, Math.PI * 2);
             ctx.fill();
 
-            // velocity vector
             ctx.strokeStyle = "#00eaff";
             ctx.beginPath();
             ctx.moveTo(unit.x, unit.y);
@@ -146,9 +150,9 @@ APEXSIM.Renderer = {
 
         const lines = [
             `Units: ${Engine.units.length}`,
-            `Running: ${Engine.running}`,
-            `Speed: ${Engine.timeScale.toFixed(2)}x`,
-            `Step Requested: ${Engine.stepRequested}`
+            `Running: ${Engine._running}`,
+            `Speed: ${Engine._speed.toFixed(2)}x`,
+            `Step Requested: ${Engine._stepRequested}`
         ];
 
         let y = 20;
