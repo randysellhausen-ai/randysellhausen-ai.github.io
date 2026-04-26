@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Liminal Engine v8.2</title>
+
+    <!-- APEXUI STYLES -->
+    <link rel="stylesheet" href="apexui/apexui-style.css">
+    <link rel="stylesheet" href="apexui/apexui-controlpanel.css">
+
     <style>
         body {
             margin: 0;
@@ -108,16 +113,34 @@
     <!-- CANVAS -->
     <canvas id="vc-canvas"></canvas>
 
-    <!-- CORE ENGINE FILES -->
-    <script src="apexsim-core.js"></script>
-    <script src="apexsim-world.js"></script>
-    <script src="apexsim-camera.js"></script>
-    <script src="apexsim-engine.js"></script>
-    <script src="apexsim-renderer.js"></script>
-    <script src="apexsim-test.js"></script>
+    <!-- CORE / BOOTSTRAP -->
+    <script src="apexcore.js"></script>
 
-    <!-- ⭐ ONLY THIS CONTROL PANEL FILE -->
-    <script src="apexsim-renderer-control.js"></script>
+    <!-- LIMINAL ENGINE / APEXSIM CORE STACK -->
+    <script src="apexsim/apexsim-core.js"></script>
+    <script src="apexsim/apexsim-data.js"></script>
+    <script src="apexsim/apexsim-debug-control.js"></script>
+    <script src="apexsim/apexsim-debug.js"></script>
+    <script src="apexsim/apexsim-world.js"></script>
+    <script src="apexsim/apexsim-camera.js"></script>
+    <script src="apexsim/apexsim-engine.js"></script>
+    <script src="apexsim/apexsim-renderer.js"></script>
+    <script src="apexsim/apexsim-test.js"></script>
+    <script src="apexsim/apexsim-input.js"></script>
+    <script src="apexsim/apexsim-physics.js"></script>
+    <script src="apexsim/apexsim-systems.js"></script>
+    <script src="apexsim/apexsim-modules.js"></script>
+    <script src="apexsim/apexsim-ui.js"></script>
+    <script src="apexsim/apexsim.js"></script>
+
+    <!-- APEXUI JS (HUD / PANELS / INPUT) -->
+    <script src="apexui/apexui-hud.js"></script>
+    <script src="apexui/apexui-input.js"></script>
+    <script src="apexui/apexui-layout.js"></script>
+    <script src="apexui/apexui-panels.js"></script>
+
+    <!-- ⭐ ONLY THIS CONTROL PANEL BINDER (NO apexui-controlpanel.js) -->
+    <script src="apexsim/apexsim-renderer-control.js"></script>
 
 </body>
 </html>
