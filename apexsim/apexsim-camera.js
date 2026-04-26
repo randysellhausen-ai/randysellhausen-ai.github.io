@@ -1,9 +1,9 @@
 // =========================================================
-// APEXSIM.Camera — Liminal Engine v8.2 (Tile‑Aligned Version)
+// APEXSIM.Camera — Liminal Engine v8.2 (World‑Centered Final)
 // =========================================================
-// - Centers camera on the true visual center of the world
-// - Accounts for tileSize offset (half‑tile)
-// - Reset returns to correct center
+// - Camera origin is (0,0) = world center
+// - Reset returns to world center
+// - Works perfectly with centered renderer
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -21,23 +21,14 @@ APEXSIM.Camera = {
     maxZoom: 3.0,
 
     // -----------------------------------------------------
-    // INIT — centers camera on world (tile‑aligned)
+    // INIT — camera starts at world center
     // -----------------------------------------------------
     init() {
-        const World    = window.APEXSIM && APEXSIM.World;
-        const Renderer = window.APEXSIM && APEXSIM.Renderer;
+        this.state.x = 0;
+        this.state.y = 0;
+        this.state.zoom = 1;
 
-        if (World && Renderer && World.width && World.height) {
-            const worldPixelWidth  = World.width  * Renderer.tileSize;
-            const worldPixelHeight = World.height * Renderer.tileSize;
-
-            // Correct tile‑aligned center
-            this.state.x = (worldPixelWidth  / 2) - (Renderer.tileSize / 2);
-            this.state.y = (worldPixelHeight / 2) - (Renderer.tileSize / 2);
-            this.state.zoom = 1;
-        }
-
-        console.log("APEXSIM.Camera — Ready (Tile‑Aligned).");
+        console.log("APEXSIM.Camera — Ready (World‑Centered).");
     },
 
     // -----------------------------------------------------
@@ -52,20 +43,8 @@ APEXSIM.Camera = {
     },
 
     reset() {
-        const World    = window.APEXSIM && APEXSIM.World;
-        const Renderer = window.APEXSIM && APEXSIM.Renderer;
-
-        if (World && Renderer && World.width && World.height) {
-            const worldPixelWidth  = World.width  * Renderer.tileSize;
-            const worldPixelHeight = World.height * Renderer.tileSize;
-
-            this.state.x = (worldPixelWidth  / 2) - (Renderer.tileSize / 2);
-            this.state.y = (worldPixelHeight / 2) - (Renderer.tileSize / 2);
-        } else {
-            this.state.x = 0;
-            this.state.y = 0;
-        }
-
+        this.state.x = 0;
+        this.state.y = 0;
         this.state.zoom = 1;
     },
 
