@@ -1,10 +1,5 @@
 // =========================================================
-// APEXSIM.Engine — Liminal Engine v8.2 (with STOP Soft Reset)
-// =========================================================
-// - Simulation loop (play/pause/step/stop)
-// - Unit management
-// - Speed control
-// - Renderer integration
+// APEXSIM.Engine — core simulation
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -16,23 +11,17 @@ APEXSIM.Engine = {
     _speed: 1,
     _stepRequested: false,
 
-    // -----------------------------------------------------
-    // INIT
-    // -----------------------------------------------------
     init() {
         console.log("APEXSIM.Engine — Initialized.");
         this._loop();
     },
 
-    // -----------------------------------------------------
-    // MAIN LOOP (RAF)
-    // -----------------------------------------------------
     _loop() {
         requestAnimationFrame(() => this._loop());
 
         if (!this._running && !this._stepRequested) return;
 
-        const dt = 0.016 * this._speed; // ~60 FPS base
+        const dt = 0.016 * this._speed;
 
         this._update(dt);
 
@@ -43,9 +32,6 @@ APEXSIM.Engine = {
         this._stepRequested = false;
     },
 
-    // -----------------------------------------------------
-    // UPDATE SIMULATION
-    // -----------------------------------------------------
     _update(dt) {
         for (let unit of this.units) {
             unit.x += unit.vx * dt * 60;
@@ -53,9 +39,6 @@ APEXSIM.Engine = {
         }
     },
 
-    // -----------------------------------------------------
-    // ENGINE CONTROLS
-    // -----------------------------------------------------
     play() {
         this._running = true;
     },
@@ -68,30 +51,18 @@ APEXSIM.Engine = {
         this._stepRequested = true;
     },
 
-    // -----------------------------------------------------
-    // STOP (Soft Reset)
-    // -----------------------------------------------------
     stop() {
         this._running = false;
         this._speed = 1;
         this._stepRequested = false;
-
-        // Clear all units
         this.units = [];
-
         console.log("APEXSIM.Engine — STOP invoked (soft reset).");
     },
 
-    // -----------------------------------------------------
-    // SPEED CONTROL
-    // -----------------------------------------------------
     setSpeed(multiplier) {
         this._speed = Math.max(0.1, Math.min(4.0, multiplier));
     },
 
-    // -----------------------------------------------------
-    // UNIT MANAGEMENT
-    // -----------------------------------------------------
     addUnit(x, y) {
         this.units.push({
             x,
@@ -106,5 +77,4 @@ APEXSIM.Engine = {
     }
 };
 
-// Auto-init
 APEXSIM.Engine.init();
