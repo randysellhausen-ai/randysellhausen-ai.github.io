@@ -181,11 +181,12 @@ APEXSIM.AI = {
     },
 
     _stateWander(u, dt) {
-        u.vx += (Math.random() - 0.5) * 0.20;
-        u.vy += (Math.random() - 0.5) * 0.20;
+        // Exaggerated random drift
+        u.vx += (Math.random() - 0.5) * 2.0;
+        u.vy += (Math.random() - 0.5) * 2.0;
 
         const speed = Math.sqrt(u.vx*u.vx + u.vy*u.vy);
-        const maxSpeed = 2.5;
+        const maxSpeed = 25;
         if (speed > maxSpeed) {
             u.vx = (u.vx / speed) * maxSpeed;
             u.vy = (u.vy / speed) * maxSpeed;
@@ -201,11 +202,12 @@ APEXSIM.AI = {
     },
 
     _stateRoam(u, dt) {
-        u.vx += (Math.random() - 0.5) * 0.40;
-        u.vy += (Math.random() - 0.5) * 0.40;
+        // Stronger directional drift
+        u.vx += (Math.random() - 0.5) * 4.0;
+        u.vy += (Math.random() - 0.5) * 4.0;
 
         const speed = Math.sqrt(u.vx*u.vx + u.vy*u.vy);
-        const maxSpeed = 4.0;
+        const maxSpeed = 40;
         if (speed > maxSpeed) {
             u.vx = (u.vx / speed) * maxSpeed;
             u.vy = (u.vy / speed) * maxSpeed;
@@ -251,12 +253,12 @@ APEXSIM.AI = {
             return;
         }
 
-        const force = 0.6;
+        const force = 6.0;
         u.vx += (dx / dist) * force;
         u.vy += (dy / dist) * force;
 
         const speed = Math.sqrt(u.vx*u.vx + u.vy*u.vy);
-        const maxSpeed = 5.0;
+        const maxSpeed = 50;
         if (speed > maxSpeed) {
             u.vx = (u.vx / speed) * maxSpeed;
             u.vy = (u.vy / speed) * maxSpeed;
@@ -278,12 +280,12 @@ APEXSIM.AI = {
         const dy = u.y - threat.y;
         const dist = Math.sqrt(dx*dx + dy*dy) || 0.0001;
 
-        const force = 0.8;
+        const force = 8.0;
         u.vx += (dx / dist) * force;
         u.vy += (dy / dist) * force;
 
         const speed = Math.sqrt(u.vx*u.vx + u.vy*u.vy);
-        const maxSpeed = 6.0;
+        const maxSpeed = 60;
         if (speed > maxSpeed) {
             u.vx = (u.vx / speed) * maxSpeed;
             u.vy = (u.vy / speed) * maxSpeed;
