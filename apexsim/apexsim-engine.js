@@ -33,9 +33,10 @@ APEXSIM.Engine = {
     },
 
     _update(dt) {
+        const scale = 60 * 8; // 8× movement scale
         for (let unit of this.units) {
-            unit.x += unit.vx * dt * 60;
-            unit.y += unit.vy * dt * 60;
+            unit.x += unit.vx * dt * scale;
+            unit.y += unit.vy * dt * scale;
         }
     },
 
