@@ -28,31 +28,39 @@ APEXSIM.DebugOverlay = {
 
         for (let u of units) {
 
+            // =================================================
             // POSITION LABEL
+            // =================================================
             ctx.fillText(
                 `ID:${id} (${u.x.toFixed(1)}, ${u.y.toFixed(1)})`,
                 u.x + 12,
                 u.y - 12
             );
 
+            // =================================================
             // VELOCITY VECTOR
+            // =================================================
             ctx.beginPath();
             ctx.moveTo(u.x, u.y);
             ctx.lineTo(u.x + u.vx * 20, u.y + u.vy * 20);
             ctx.stroke();
 
+            // =================================================
             // BOUNDING CIRCLE
+            // =================================================
             ctx.beginPath();
             ctx.arc(u.x, u.y, 8, 0, Math.PI * 2);
             ctx.stroke();
 
+            // =================================================
             // ⭐ AI STATE OVERLAY
+            // =================================================
             const aiState = this._getAIState(u);
+
             ctx.fillStyle = "#ffaa00";
             ctx.fillText(aiState, u.x + 12, u.y + 4);
 
-            // reset color for next unit
-            ctx.fillStyle = "#ff00ff";
+            ctx.fillStyle = "#ff00ff"; // reset for next unit
 
             id++;
         }
@@ -61,14 +69,19 @@ APEXSIM.DebugOverlay = {
     },
 
     // -----------------------------------------------------
-    // AI STATE LOGIC (placeholder, velocity-based)
+    // AI STATE LOGIC (placeholder — replace with real AI later)
     // -----------------------------------------------------
     _getAIState(unit) {
+
+        // You can replace this with real AI logic later.
+        // For now, we infer a "state" from velocity.
+
         const speed = Math.sqrt(unit.vx * unit.vx + unit.vy * unit.vy);
 
         if (speed < 0.1) return "Idle";
         if (speed < 1.0) return "Wandering";
         if (speed < 2.0) return "Roaming";
+
         return "Sprinting";
     }
 };
