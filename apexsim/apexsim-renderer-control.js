@@ -1,9 +1,11 @@
 // =========================================================
 // APEXSIM.RendererControl — Liminal Engine v8.2
-// Connects UI → Renderer (grid toggle, debug toggle)
 // =========================================================
-// This file listens for UI events and updates the renderer.
-// No wrappers. No overrides. Pure direct control.
+// Responsibilities:
+// - Bind UI controls for renderer-related features
+// - Toggle grid visibility
+// - Toggle debug overlay (via DebugControl.enabled)
+// - Connect camera zoom buttons
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -11,35 +13,54 @@ window.APEXSIM = window.APEXSIM || {};
 APEXSIM.RendererControl = {
 
     init() {
-        const Renderer = window.APEXSIM && APEXSIM.Renderer;
-        if (!Renderer) {
-            console.error("APEXSIM.RendererControl — Renderer not found.");
-            return;
-        }
+        const Renderer = APEXSIM.Renderer;
+        const DebugControl = APEXSIM.DebugControl;
+        const Camera = APEXSIM.Camera;
 
+        // -------------------------------------------------
         // GRID TOGGLE
-        const gridCheckbox = document.getElementById("vc-render-grid");
+        // -------------------------------------------------
+        const gridCheckbox = document.getElementById("showGrid");
         if (gridCheckbox) {
             gridCheckbox.addEventListener("change", () => {
-                Renderer.setGridVisible(gridCheckbox.checked);
+                Renderer.showGrid = gridCheckbox.checked;
             });
         }
 
-        // DEBUG TOGGLE
-        const debugCheckbox = document.getElementById("vc-render-debug");
+        // -------------------------------------------------
+        // DEBUG OVERLAY TOGGLE
+        // -------------------------------------------------
+        const debugCheckbox = document.getElementById("debugOverlay");
         if (debugCheckbox) {
             debugCheckbox.addEventListener("change", () => {
-                Renderer.setDebugVisible(debugCheckbox.checked);
+                DebugControl.enabled = debugCheckbox.checked;
+            });
+        }
+
+        // -------------------------------------------------
+        // CAMERA CONTROLS
+        // -------------------------------------------------
+        const zoomInBtn = document.getElementById("zoomIn");
+        if (zoomInBtn) {
+            zoomInBtn.addEventListener("click", () => {
+                Camera.zoomIn();
+            });
+        }
+
+        const zoomOutBtn = document.getElementById("zoomOut");
+        if (zoomOutBtn) {
+            zoomOutBtn.addEventListener("click", () => {
+                Camera.zoomOut();
+            });
+        }
+
+        const resetBtn = document.getElementById("resetCamera");
+        if (resetBtn) {
+            resetBtn.addEventListener("click", () => {
+                Camera.reset();
             });
         }
 
         console.log("APEXSIM.RendererControl — Ready.");
     }
 };
-
-// Auto‑init after DOM is ready
-document.addEventListener("DOMContentLoaded", () => {
-    if (window.APEXSIM && APEXSIM.RendererControl) {
-        APEXSIM.RendererControl.init();
-    }
-});
