@@ -109,12 +109,25 @@
 
     <canvas id="vc-canvas"></canvas>
 
+    <!-- ========================================================= -->
+    <!--  APEXSIM ENGINE + BEHAVIOR SYSTEM (Correct Load Order)    -->
+    <!-- ========================================================= -->
+
     <script src="apexsim/apexsim-core.js"></script>
     <script src="apexsim/apexsim-camera.js"></script>
     <script src="apexsim/apexsim-engine.js"></script>
     <script src="apexsim/apexsim-world.js"></script>
     <script src="apexsim/apexsim-ai.js"></script>
+
+    <!-- APEX-Behavior v1 -->
+    <script src="apexsim/apexsim-behavior-core.js"></script>
+    <script src="apexsim/apexsim-behaviors.js"></script>
+    <script src="apexsim/apexsim-behavior.js"></script>
+
+    <!-- Debug behavior helpers MUST load before overlay -->
+    <script src="apexsim/apexsim-debug-behavior.js"></script>
     <script src="apexsim/apexsim-debug-overlay.js"></script>
+
     <script src="apexsim/apexsim-renderer.js"></script>
     <script src="apexsim/apexsim-test.js"></script>
     <script src="apexsim/apexsim-input.js"></script>
