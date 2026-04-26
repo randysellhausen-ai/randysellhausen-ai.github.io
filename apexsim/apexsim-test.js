@@ -1,5 +1,6 @@
 // =========================================================
-// APEXSIM.Test — Unit Spawning & Scenarios
+// APEXSIM.Test — Minimal Test Harness (Spawn 1 Unit Only)
+// v1.1 — No STOP, No Reset, No Interference
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -7,48 +8,45 @@ window.APEXSIM = window.APEXSIM || {};
 APEXSIM.Test = {
 
     init() {
-        APEXSIM.Engine.addUnit(0, 0);
-        const units = APEXSIM.Engine.units;
-        const u = units[units.length - 1];
-        u.isEnemy = false;
-        console.log("APEXSIM.Test — Spawned initial test unit at world center (0, 0).");
+        console.log("APEXSIM.Test — Initializing test scenario...");
 
-        APEXSIM.Engine.addUnit(40, 0);
-        const e = units[units.length - 1];
-        e.isEnemy = true;
+        // Spawn exactly 1 unit at world center
+        this.spawnInitialUnit();
+
+        console.log("APEXSIM.Test — Ready.");
     },
 
-    spawnFriendly(x = 0, y = 0) {
-        APEXSIM.Engine.addUnit(x, y);
-        const units = APEXSIM.Engine.units;
-        const u = units[units.length - 1];
-        u.isEnemy = false;
-        return u;
-    },
-
-    spawnEnemy(x = 0, y = 0) {
-        APEXSIM.Engine.addUnit(x, y);
-        const units = APEXSIM.Engine.units;
-        const u = units[units.length - 1];
-        u.isEnemy = true;
-        return u;
-    },
-
-    spawnMixedGroup(count = 10) {
-        for (let i = 0; i < count; i++) {
-            const x = (Math.random() - 0.5) * 200;
-            const y = (Math.random() - 0.5) * 200;
-            if (Math.random() < 0.5) {
-                this.spawnFriendly(x, y);
-            } else {
-                this.spawnEnemy(x, y);
-            }
+    spawnInitialUnit() {
+        if (!APEXSIM.Engine || !APEXSIM.Engine.units) {
+            console.warn("APEXSIM.Test — Engine not ready, cannot spawn.");
+            return;
         }
-    },
 
-    clearAll() {
-        APEXSIM.Engine.clearUnits();
+        const world = APEXSIM.World;
+        const x = 0;
+        const y = 0;
+
+        const unit = {
+            id: "test-unit-1",
+            label: "Test Unit",
+            x: x,
+            y: y,
+            vx: 0,
+            vy: 0,
+            state: "Idle",
+            behaviorName: "None",
+            path: []
+        };
+
+        APEXSIM.Engine.units.push(unit);
+
+        console.log(
+            `APEXSIM.Test — Spawned initial test unit at world center (${x}, ${y}).`
+        );
     }
 };
 
-APEXSIM.Test.init();
+// Auto‑init when engine is ready
+window.addEventListener("load", () => {
+    setTimeout(() => APEXSIM.Test.init(), 50);
+});
