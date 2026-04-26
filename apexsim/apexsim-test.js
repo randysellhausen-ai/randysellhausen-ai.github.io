@@ -1,10 +1,9 @@
 // =========================================================
-// APEXSIM.Test — Liminal Engine v8.2
-// Simple test harness for spawning units into the simulation
+// APEXSIM.Test — Liminal Engine v8.2 (World‑Centered Version)
 // =========================================================
-// - Used by index.html on boot (spawnTestUnit)
-// - Safe to call multiple times
-// - Uses APEXSIM.Engine.addUnit / spawnUnits
+// - Spawns units at the WORLD CENTER (not 10,10)
+// - Random spawns occur within world bounds
+// - Fully compatible with Engine, Renderer, Camera
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -13,40 +12,69 @@ APEXSIM.Test = {
 
     _bootSpawned: false,
 
-    // Called from index.html on load (optional)
+    // -----------------------------------------------------
+    // SPAWN ONE UNIT ON BOOT (center of world)
+    // -----------------------------------------------------
     spawnTestUnit() {
-        const Engine = window.APEXSIM && APEXSIM.Engine;
+        const Engine   = window.APEXSIM && APEXSIM.Engine;
+        const World    = window.APEXSIM && APEXSIM.World;
+        const Renderer = window.APEXSIM && APEXSIM.Renderer;
+
         if (!Engine || typeof Engine.addUnit !== "function") {
             console.warn("APEXSIM.Test.spawnTestUnit — Engine.addUnit is not available.");
             return;
         }
 
-        // Only auto‑spawn once on boot
+        if (!World || !Renderer) {
+            console.warn("APEXSIM.Test.spawnTestUnit — World/Renderer not ready.");
+            return;
+        }
+
+        // Only auto‑spawn once
         if (this._bootSpawned) return;
         this._bootSpawned = true;
 
-        // Spawn a single unit at a reasonable default position
-        Engine.addUnit(10, 10);
+        // Compute world center in pixel space
+        const worldPixelWidth  = World.width  * Renderer.tileSize;
+        const worldPixelHeight = World.height * Renderer.tileSize;
 
-        console.log("APEXSIM.Test — Spawned initial test unit at (10, 10).");
+        const cx = worldPixelWidth  / 2;
+        const cy = worldPixelHeight / 2;
+
+        Engine.addUnit(cx, cy);
+
+        console.log(`APEXSIM.Test — Spawned initial test unit at world center (${cx}, ${cy}).`);
     },
 
-    // Manual helper: spawn N units at random positions
+    // -----------------------------------------------------
+    // SPAWN N RANDOM UNITS (within world bounds)
+    // -----------------------------------------------------
     spawnRandomUnits(count) {
-        const Engine = window.APEXSIM && APEXSIM.Engine;
+        const Engine   = window.APEXSIM && APEXSIM.Engine;
+        const World    = window.APEXSIM && APEXSIM.World;
+        const Renderer = window.APEXSIM && APEXSIM.Renderer;
+
         if (!Engine || typeof Engine.addUnit !== "function") {
             console.warn("APEXSIM.Test.spawnRandomUnits — Engine.addUnit is not available.");
             return;
         }
 
+        if (!World || !Renderer) {
+            console.warn("APEXSIM.Test.spawnRandomUnits — World/Renderer not ready.");
+            return;
+        }
+
         count = count || 10;
 
+        const worldPixelWidth  = World.width  * Renderer.tileSize;
+        const worldPixelHeight = World.height * Renderer.tileSize;
+
         for (let i = 0; i < count; i++) {
-            const x = 5 + Math.random() * 10;
-            const y = 5 + Math.random() * 10;
+            const x = Math.random() * worldPixelWidth;
+            const y = Math.random() * worldPixelHeight;
             Engine.addUnit(x, y);
         }
 
-        console.log(`APEXSIM.Test — Spawned ${count} random units.`);
+        console.log(`APEXSIM.Test — Spawned ${count} random units within world bounds.`);
     }
 };
