@@ -6,6 +6,15 @@ window.APEXSIM = window.APEXSIM || {};
 
 const APEXUI = {
 
+    _stepMany(count) {
+        // Run Engine.step() count times, even when paused.
+        for (let i = 0; i < count; i++) {
+            if (APEXSIM.Engine && typeof APEXSIM.Engine.step === "function") {
+                APEXSIM.Engine.step();
+            }
+        }
+    },
+
     init() {
         console.log("APEXUI.ControlPanel — Ready.");
 
@@ -18,8 +27,19 @@ const APEXUI = {
             APEXSIM.Engine.pause();
         });
 
+        // Step (1 frame)
         document.getElementById("vc-sim-step").addEventListener("click", () => {
             APEXSIM.Engine.step();
+        });
+
+        // Step (10 frames)
+        document.getElementById("vc-sim-step10").addEventListener("click", () => {
+            this._stepMany(10);
+        });
+
+        // Step (1 second = 60 frames, visual fast-forward)
+        document.getElementById("vc-sim-step1s").addEventListener("click", () => {
+            this._stepMany(60);
         });
 
         document.getElementById("vc-sim-stop").addEventListener("click", () => {
