@@ -1,9 +1,5 @@
 // =========================================================
-// APEXSIM.Input — Liminal Engine v8.2 (World‑Centered)
-// =========================================================
-// - Handles camera movement (WASD + mouse drag)
-// - Works with new Camera.state (x, y, zoom)
-// - No translate(), no legacy API calls
+// APEXSIM.Input — WASD + mouse drag camera
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -48,14 +44,10 @@ APEXSIM.Input = {
         this._loop();
     },
 
-    // -----------------------------------------------------
-    // INPUT LOOP
-    // -----------------------------------------------------
     _loop() {
         requestAnimationFrame(() => this._loop());
 
         const cam = APEXSIM.Camera;
-
         const speed = 8 / cam.state.zoom;
 
         if (this.keys["w"] || this.keys["ArrowUp"]) {
@@ -73,5 +65,4 @@ APEXSIM.Input = {
     }
 };
 
-// Auto-init
 window.addEventListener("DOMContentLoaded", () => APEXSIM.Input.init());
