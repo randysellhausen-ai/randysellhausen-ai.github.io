@@ -1,10 +1,17 @@
 // =========================================================
-// APEXSIM.BT — Behavior Tree Core (v1)
-// Classic BT Syntax
+// APEXSIM.BT — Behavior Tree Core (v1.2)
+// Classic BT Syntax + Live Node Firing Instrumentation
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
 APEXSIM.BT = {};
+APEXSIM.BTDebug = APEXSIM.BTDebug || {};
+
+// ---------------------------------------------------------
+// Debug Hooks (No-Op Defaults)
+// ---------------------------------------------------------
+APEXSIM.BTDebug.onNodeEnter = APEXSIM.BTDebug.onNodeEnter || function (node, unit) {};
+APEXSIM.BTDebug.onNodeExit  = APEXSIM.BTDebug.onNodeExit  || function (node, unit, result) {};
 
 // ---------------------------------------------------------
 // Node Status
@@ -20,6 +27,14 @@ class BTNode {
     tick(u, dt) {
         throw new Error("BTNode.tick() must be implemented.");
     }
+
+    _enter(u) {
+        APEXSIM.BTDebug.onNodeEnter(this, u);
+    }
+
+    _exit(u, result) {
+        APEXSIM.BTDebug.onNodeExit(this, u, result);
+    }
 }
 
 // ---------------------------------------------------------
@@ -32,9 +47,14 @@ class Condition extends BTNode {
     }
 
     tick(u, dt) {
-        return this.fn(u, dt)
+        this._enter(u);
+
+        const result = this.fn(u, dt)
             ? APEXSIM.BT.SUCCESS
             : APEXSIM.BT.FAILURE;
+
+        this._exit(u, result);
+        return result;
     }
 }
 
@@ -48,7 +68,12 @@ class Action extends BTNode {
     }
 
     tick(u, dt) {
-        return this.fn(u, dt);
+        this._enter(u);
+
+        const result = this.fn(u, dt);
+
+        this._exit(u, result);
+        return result;
     }
 }
 
@@ -63,15 +88,19 @@ class Sequence extends BTNode {
     }
 
     tick(u, dt) {
+        this._enter(u);
+
         while (this.index < this.children.length) {
             const status = this.children[this.index].tick(u, dt);
 
             if (status === APEXSIM.BT.RUNNING) {
+                this._exit(u, APEXSIM.BT.RUNNING);
                 return APEXSIM.BT.RUNNING;
             }
 
             if (status === APEXSIM.BT.FAILURE) {
                 this.index = 0;
+                this._exit(u, APEXSIM.BT.FAILURE);
                 return APEXSIM.BT.FAILURE;
             }
 
@@ -79,6 +108,7 @@ class Sequence extends BTNode {
         }
 
         this.index = 0;
+        this._exit(u, APEXSIM.BT.SUCCESS);
         return APEXSIM.BT.SUCCESS;
     }
 }
@@ -94,15 +124,19 @@ class Selector extends BTNode {
     }
 
     tick(u, dt) {
+        this._enter(u);
+
         while (this.index < this.children.length) {
             const status = this.children[this.index].tick(u, dt);
 
             if (status === APEXSIM.BT.RUNNING) {
+                this._exit(u, APEXSIM.BT.RUNNING);
                 return APEXSIM.BT.RUNNING;
             }
 
             if (status === APEXSIM.BT.SUCCESS) {
                 this.index = 0;
+                this._exit(u, APEXSIM.BT.SUCCESS);
                 return APEXSIM.BT.SUCCESS;
             }
 
@@ -110,6 +144,7 @@ class Selector extends BTNode {
         }
 
         this.index = 0;
+        this._exit(u, APEXSIM.BT.FAILURE);
         return APEXSIM.BT.FAILURE;
     }
 }
@@ -122,4 +157,4 @@ APEXSIM.BT.Action = Action;
 APEXSIM.BT.Sequence = Sequence;
 APEXSIM.BT.Selector = Selector;
 
-console.log("APEXSIM.BT — Behavior Tree Core Ready.");
+console.log("APEXSIM.BT — Behavior Tree Core Ready (v1.2 Instrumented).");
