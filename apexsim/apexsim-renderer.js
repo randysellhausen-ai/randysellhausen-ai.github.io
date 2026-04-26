@@ -1,5 +1,5 @@
 // =========================================================
-// APEXSIM.Renderer — canvas + grid + units
+// APEXSIM.Renderer — canvas + grid + units + debug overlay
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -29,9 +29,11 @@ APEXSIM.Renderer = {
         const cam = APEXSIM.Camera;
         const units = APEXSIM.Engine.units;
 
+        // Reset transform + clear
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // Center camera
         const cx = this.canvas.width / 2;
         const cy = this.canvas.height / 2;
 
@@ -39,17 +41,26 @@ APEXSIM.Renderer = {
         ctx.scale(cam.state.zoom, cam.state.zoom);
         ctx.translate(-cam.state.x, -cam.state.y);
 
+        // Grid
         if (this.showGrid) {
             this._drawGrid();
         }
 
+        // Units
         this._drawUnits(units);
+
+        // Center crosshair
         this._drawCenterCrosshair();
+
+        // ⭐ Debug overlay
+        if (APEXSIM.DebugOverlay && typeof APEXSIM.DebugOverlay.render === "function") {
+            APEXSIM.DebugOverlay.render(ctx, units);
+        }
     },
 
     _drawGrid() {
         const ctx = this.ctx;
-        const size = APEXSIM.World.tileSize;
+        const size = APEXSIM.World.tileSize || 16;
         const half = 2048;
 
         ctx.strokeStyle = "#222";
