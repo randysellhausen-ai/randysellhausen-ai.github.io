@@ -1,21 +1,55 @@
 // =========================================================
-// APEXSIM.AI — Simple State Machine for Units
+// APEXSIM.AI — Perception, Hearing, Threats, State Machine
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
 
 APEXSIM.AI = {
 
+    // -----------------------------------------------------
+    // CONFIG
+    // -----------------------------------------------------
+    VISION_RADIUS: 160,
+    HEARING_RADIUS: 220,
+    VISION_FOV: 120 * Math.PI / 180,   // 120° FOV
+
+    _soundEvents: [],
+
     init() {
         console.log("APEXSIM.AI — State Machine Ready.");
     },
 
-    // Called once per frame by Engine
+    // -----------------------------------------------------
+    // SOUND EMISSION
+    // -----------------------------------------------------
+    emitSound(x, y, radius, type = "generic") {
+        this._soundEvents.push({
+            x, y,
+            radius,
+            type,
+            time: APEXSIM.Engine.time
+        });
+    },
+
+    // -----------------------------------------------------
+    // MAIN UPDATE (called once per frame)
+    // -----------------------------------------------------
     update(units, dt) {
+        // Perception pass
         for (let u of units) {
             if (!u.state) this._initUnit(u);
+            this._updatePerception(u, units);
+            this._updateHearing(u);
+            this._updateThreats(u);
+        }
+
+        // Behavior pass
+        for (let u of units) {
             this._updateUnit(u, dt);
         }
+
+        // Clear sound events
+        this._soundEvents.length = 0;
     },
 
     // -----------------------------------------------------
@@ -25,6 +59,109 @@ APEXSIM.AI = {
         u.state = "Idle";
         u.stateTimer = 0;
         u.target = null;
+
+        u.visionRadius = this.VISION_RADIUS;
+        u.visionFOV = this.VISION_FOV;
+        u.hearingRadius = this.HEARING_RADIUS;
+
+        u.visibleUnits = [];
+        u.heardEvents = [];
+        u.threatMemory = [];
+        u.lastSeenTarget = null;
+        u.hasThreat = false;
+    },
+
+    // -----------------------------------------------------
+    // PERCEPTION: VISION
+    // -----------------------------------------------------
+    _canSee(observer, target) {
+        const dx = target.x - observer.x;
+        const dy = target.y - observer.y;
+        const distSq = dx*dx + dy*dy;
+
+        if (distSq > observer.visionRadius * observer.visionRadius)
+            return false;
+
+        // Facing direction from velocity
+        const facing = Math.atan2(observer.vy, observer.vx);
+
+        const angleToTarget = Math.atan2(dy, dx);
+        let delta = angleToTarget - facing;
+
+        // Normalize to [-PI, PI]
+        if (delta > Math.PI) delta -= 2 * Math.PI;
+        if (delta < -Math.PI) delta += 2 * Math.PI;
+
+        return Math.abs(delta) <= observer.visionFOV * 0.5;
+    },
+
+    _updatePerception(u, units) {
+        u.visibleUnits = [];
+
+        for (let other of units) {
+            if (other === u) continue;
+            if (this._canSee(u, other)) {
+                u.visibleUnits.push(other);
+            }
+        }
+    },
+
+    // -----------------------------------------------------
+    // PERCEPTION: HEARING
+    // -----------------------------------------------------
+    _updateHearing(u) {
+        u.heardEvents = [];
+
+        for (const ev of this._soundEvents) {
+            const dx = ev.x - u.x;
+            const dy = ev.y - u.y;
+            const distSq = dx*dx + dy*dy;
+
+            const r = Math.min(ev.radius, u.hearingRadius);
+
+            if (distSq <= r * r) {
+                u.heardEvents.push(ev);
+            }
+        }
+    },
+
+    // -----------------------------------------------------
+    // THREAT DETECTION + MEMORY
+    // -----------------------------------------------------
+    _updateThreats(u) {
+        const now = APEXSIM.Engine.time;
+
+        // Decay old threats
+        u.threatMemory = u.threatMemory.filter(t => now - t.time < 3.0);
+
+        // Vision-based threats
+        for (const other of u.visibleUnits) {
+            if (other.isEnemy) {
+                u.threatMemory.push({
+                    type: "enemy",
+                    target: other,
+                    x: other.x,
+                    y: other.y,
+                    time: now
+                });
+                u.lastSeenTarget = { x: other.x, y: other.y, time: now };
+            }
+        }
+
+        // Sound-based threats
+        for (const ev of u.heardEvents) {
+            if (ev.type === "threat") {
+                u.threatMemory.push({
+                    type: "sound",
+                    x: ev.x,
+                    y: ev.y,
+                    time: now
+                });
+                u.lastSeenTarget = { x: ev.x, y: ev.y, time: now };
+            }
+        }
+
+        u.hasThreat = u.threatMemory.length > 0;
     },
 
     // -----------------------------------------------------
@@ -32,6 +169,11 @@ APEXSIM.AI = {
     // -----------------------------------------------------
     _updateUnit(u, dt) {
         u.stateTimer += dt;
+
+        // Threat-driven transitions
+        if (u.hasThreat && u.state !== "Chase" && u.state !== "Flee") {
+            this._changeState(u, "Chase");
+        }
 
         switch (u.state) {
 
@@ -61,11 +203,9 @@ APEXSIM.AI = {
     // STATE: IDLE
     // -----------------------------------------------------
     _stateIdle(u, dt) {
-        // Slow down
         u.vx *= 0.9;
         u.vy *= 0.9;
 
-        // After 1–3 seconds, start wandering
         if (u.stateTimer > 1 + Math.random() * 2) {
             this._changeState(u, "Wander");
         }
@@ -75,18 +215,15 @@ APEXSIM.AI = {
     // STATE: WANDER
     // -----------------------------------------------------
     _stateWander(u, dt) {
-        // Random drift
         u.vx += (Math.random() - 0.5) * 0.05;
         u.vy += (Math.random() - 0.5) * 0.05;
 
-        // Cap speed
         const speed = Math.sqrt(u.vx*u.vx + u.vy*u.vy);
         if (speed > 1.2) {
             u.vx *= 0.95;
             u.vy *= 0.95;
         }
 
-        // After 2–5 seconds, roam
         if (u.stateTimer > 2 + Math.random() * 3) {
             this._changeState(u, "Roam");
         }
@@ -96,34 +233,46 @@ APEXSIM.AI = {
     // STATE: ROAM
     // -----------------------------------------------------
     _stateRoam(u, dt) {
-        // Stronger directional drift
         u.vx += (Math.random() - 0.5) * 0.1;
         u.vy += (Math.random() - 0.5) * 0.1;
 
-        // Cap speed
         const speed = Math.sqrt(u.vx*u.vx + u.vy*u.vy);
         if (speed > 2.0) {
             u.vx *= 0.9;
             u.vy *= 0.9;
         }
 
-        // Occasionally return to idle
         if (u.stateTimer > 3 + Math.random() * 4) {
             this._changeState(u, "Idle");
         }
     },
 
     // -----------------------------------------------------
-    // STATE: CHASE (placeholder)
+    // STATE: CHASE
     // -----------------------------------------------------
     _stateChase(u, dt) {
-        if (!u.target) {
+        let target = null;
+
+        // Prefer visible enemies
+        for (const other of u.visibleUnits) {
+            if (other.isEnemy) {
+                target = other;
+                break;
+            }
+        }
+
+        // Fall back to last seen target
+        if (!target && u.lastSeenTarget) {
+            target = u.lastSeenTarget;
+        }
+
+        if (!target) {
             this._changeState(u, "Idle");
             return;
         }
 
-        const dx = u.target.x - u.x;
-        const dy = u.target.y - u.y;
+        const dx = (target.x ?? target.x) - u.x;
+        const dy = (target.y ?? target.y) - u.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
 
         if (dist < 5) {
@@ -136,16 +285,17 @@ APEXSIM.AI = {
     },
 
     // -----------------------------------------------------
-    // STATE: FLEE (placeholder)
+    // STATE: FLEE
     // -----------------------------------------------------
     _stateFlee(u, dt) {
-        if (!u.target) {
+        let threat = u.threatMemory[0];
+        if (!threat) {
             this._changeState(u, "Idle");
             return;
         }
 
-        const dx = u.x - u.target.x;
-        const dy = u.y - u.target.y;
+        const dx = u.x - threat.x;
+        const dy = u.y - threat.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
 
         u.vx += dx / dist * 0.3;
