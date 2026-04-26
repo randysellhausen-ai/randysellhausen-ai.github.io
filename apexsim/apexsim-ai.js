@@ -31,6 +31,22 @@ APEXSIM.AI = {
         });
     },
 
+    emitSoundAtUnit(unit, radius, type = "generic") {
+        this.emitSound(unit.x, unit.y, radius, type);
+    },
+
+    emitFootstep(unit) {
+        this.emitSoundAtUnit(unit, 120, "footstep");
+    },
+
+    emitImpact(x, y) {
+        this.emitSound(x, y, 180, "impact");
+    },
+
+    emitThreatPing(x, y) {
+        this.emitSound(x, y, 220, "threat");
+    },
+
     // -----------------------------------------------------
     // MAIN UPDATE (called once per frame)
     // -----------------------------------------------------
@@ -84,7 +100,7 @@ APEXSIM.AI = {
             return false;
 
         // Facing direction from velocity
-        const facing = Math.atan2(observer.vy, observer.vx);
+        const facing = Math.atan2(observer.vy, observer.vx || 0.0001);
 
         const angleToTarget = Math.atan2(dy, dx);
         let delta = angleToTarget - facing;
@@ -208,6 +224,11 @@ APEXSIM.AI = {
         u.vx *= 0.85;
         u.vy *= 0.85;
 
+        // Occasional footstep sound (very rare)
+        if (Math.random() < 0.01) {
+            this.emitFootstep(u);
+        }
+
         // After 1–3 seconds, start wandering
         if (u.stateTimer > 1 + Math.random() * 2) {
             this._changeState(u, "Wander");
@@ -216,7 +237,7 @@ APEXSIM.AI = {
 
     // -----------------------------------------------------
     // STATE: WANDER (upgraded movement)
-    // -----------------------------------------------------
+// -----------------------------------------------------
     _stateWander(u, dt) {
         // Stronger random drift
         u.vx += (Math.random() - 0.5) * 0.20;
@@ -228,6 +249,11 @@ APEXSIM.AI = {
         if (speed > maxSpeed) {
             u.vx = (u.vx / speed) * maxSpeed;
             u.vy = (u.vy / speed) * maxSpeed;
+        }
+
+        // Occasional footstep
+        if (Math.random() < 0.05) {
+            this.emitFootstep(u);
         }
 
         // After 2–5 seconds, roam
@@ -248,8 +274,13 @@ APEXSIM.AI = {
         const speed = Math.sqrt(u.vx*u.vx + u.vy*u.vy);
         const maxSpeed = 4.0;
         if (speed > maxSpeed) {
-            u.vx = (u.vvx / speed) * maxSpeed;
+            u.vx = (u.vx / speed) * maxSpeed;
             u.vy = (u.vy / speed) * maxSpeed;
+        }
+
+        // Occasional footstep
+        if (Math.random() < 0.08) {
+            this.emitFootstep(u);
         }
 
         // Occasionally return to idle
@@ -282,8 +313,11 @@ APEXSIM.AI = {
             return;
         }
 
-        const dx = (target.x ?? target.x) - u.x;
-        const dy = (target.y ?? target.y) - u.y;
+        const tx = target.x ?? target.x;
+        const ty = target.y ?? target.y;
+
+        const dx = tx - u.x;
+        const dy = ty - u.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
 
         if (dist < 5) {
@@ -303,6 +337,11 @@ APEXSIM.AI = {
             u.vx = (u.vx / speed) * maxSpeed;
             u.vy = (u.vy / speed) * maxSpeed;
         }
+
+        // Occasional threat ping at target
+        if (Math.random() < 0.05) {
+            this.emitThreatPing(tx, ty);
+        }
     },
 
     // -----------------------------------------------------
@@ -317,7 +356,7 @@ APEXSIM.AI = {
 
         const dx = u.x - threat.x;
         const dy = u.y - threat.y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
+        const dist = Math.sqrt(dx*dx + dy*dy) || 0.0001;
 
         // Stronger escape force
         const force = 0.8;
