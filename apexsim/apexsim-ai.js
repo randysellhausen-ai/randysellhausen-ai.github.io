@@ -27,7 +27,7 @@ APEXSIM.AI = {
             x, y,
             radius,
             type,
-            time: APEXSIM.Engine.time
+            time: APEXSIM.Engine.time || 0
         });
     },
 
@@ -99,7 +99,7 @@ APEXSIM.AI = {
         if (distSq > observer.visionRadius * observer.visionRadius)
             return false;
 
-        // Facing direction from velocity
+        // Facing direction from velocity (fallback to 0 if still)
         const facing = Math.atan2(observer.vy, observer.vx || 0.0001);
 
         const angleToTarget = Math.atan2(dy, dx);
@@ -146,7 +146,7 @@ APEXSIM.AI = {
     // THREAT DETECTION + MEMORY
     // -----------------------------------------------------
     _updateThreats(u) {
-        const now = APEXSIM.Engine.time;
+        const now = APEXSIM.Engine.time || 0;
 
         // Decay old threats
         u.threatMemory = u.threatMemory.filter(t => now - t.time < 3.0);
@@ -237,7 +237,7 @@ APEXSIM.AI = {
 
     // -----------------------------------------------------
     // STATE: WANDER (upgraded movement)
-// -----------------------------------------------------
+    // -----------------------------------------------------
     _stateWander(u, dt) {
         // Stronger random drift
         u.vx += (Math.random() - 0.5) * 0.20;
@@ -313,12 +313,12 @@ APEXSIM.AI = {
             return;
         }
 
-        const tx = target.x ?? target.x;
-        const ty = target.y ?? target.y;
+        const tx = target.x;
+        const ty = target.y;
 
         const dx = tx - u.x;
         const dy = ty - u.y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
+        const dist = Math.sqrt(dx*dx + dy*dy) || 0.0001;
 
         if (dist < 5) {
             this._changeState(u, "Idle");
