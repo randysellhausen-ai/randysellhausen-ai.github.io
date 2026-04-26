@@ -9,6 +9,7 @@ const APEXUI = {
     init() {
         console.log("APEXUI.ControlPanel — Ready.");
 
+        // Simulation
         document.getElementById("vc-sim-play").addEventListener("click", () => {
             APEXSIM.Engine.play();
         });
@@ -31,6 +32,7 @@ const APEXUI = {
             APEXSIM.Engine.setSpeed(value);
         });
 
+        // Units
         document.getElementById("vc-units-spawn1").addEventListener("click", () => {
             APEXSIM.Engine.addUnit(0, 0);
         });
@@ -48,15 +50,18 @@ const APEXUI = {
             APEXSIM.Engine.clearUnits();
         });
 
+        // Renderer toggles
         document.getElementById("vc-render-grid").addEventListener("change", (e) => {
             APEXSIM.Renderer.showGrid = e.target.checked;
         });
 
         document.getElementById("vc-render-debug").addEventListener("change", (e) => {
-            // placeholder for future debug overlay
-            console.log("Debug overlay:", e.target.checked);
+            if (APEXSIM.DebugOverlay) {
+                APEXSIM.DebugOverlay.enabled = e.target.checked;
+            }
         });
 
+        // Camera
         document.getElementById("vc-cam-zoomin").addEventListener("click", () => {
             APEXSIM.Camera.zoomIn();
         });
