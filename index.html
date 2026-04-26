@@ -129,7 +129,10 @@
     <script src="apexsim/stance/apex-stance.js"></script>
     <script src="apexsim/apexsim-test.js"></script>
 
-    <!-- CONTROL LAYER (ENGINE CONTROL REMOVED) -->
+    <!-- NEW WORLD SYSTEM -->
+    <script src="apexsim/apexsim-world.js"></script>
+
+    <!-- CONTROL LAYER -->
     <script src="apexsim/apexsim-renderer-control.js"></script>
     <script src="apexsim/apexsim-debug-control.js"></script>
     <script src="apexsim/apexsim-camera.js"></script>
@@ -140,14 +143,13 @@
     <script src="apexui/apexui-panels.js"></script>
     <script src="apexui/apexui-hud.js"></script>
 
-    <!-- WORLD SYSTEM STACK -->
+    <!-- LEGACY WORLD / GAME STACK -->
     <script src="apexworld/apexworld-config.js"></script>
     <script src="apexworld/apexworld-data.js"></script>
     <script src="apexworld/apexworld-biomes.js"></script>
     <script src="apexworld/apexworld-regions.js"></script>
     <script src="apexworld/apexworld-terrain.js"></script>
 
-    <!-- GAME SYSTEM STACK -->
     <script src="apexgame/apexgame-entities.js"></script>
     <script src="apexgame/apexgame-rules.js"></script>
     <script src="apexgame/apexgame-story.js"></script>
@@ -163,19 +165,26 @@
         // Attach UI to canvas
         if (window.APEXSIM && window.APEXSIM.UI && typeof window.APEXSIM.UI.attachCanvas === "function") {
             window.APEXSIM.UI.attachCanvas(canvas);
-        } else {
-            console.error("APEXSIM.UI.attachCanvas is not available.");
         }
 
-        // Spawn one test unit on load (optional)
+        // Initialize world (APEXWORLD v1)
+        if (window.APEXSIM && window.APEXSIM.World && typeof window.APEXSIM.World.init === "function") {
+            window.APEXSIM.World.init({
+                seed: 12345,
+                width: 128,
+                height: 128
+            });
+        }
+
+        // Spawn one test unit on load
         if (window.APEXSIM && window.APEXSIM.Test && typeof window.APEXSIM.Test.spawnTestUnit === "function") {
             window.APEXSIM.Test.spawnTestUnit();
         }
 
-        // Render loop ONLY — engine runs itself internally
+        // Render loop
         function loop() {
-            if (window.APEXSIM && window.APEXSIM.Renderer && typeof window.APEXSIM.Renderer.draw === "function") {
-                window.APEXSIM.Renderer.draw();
+            if (window.APEXSIM && window.APEXSIM.Renderer && typeof window.APEXSIM.Renderer.render === "function") {
+                window.APEXSIM.Renderer.render();
             }
             requestAnimationFrame(loop);
         }
