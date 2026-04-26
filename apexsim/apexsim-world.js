@@ -1,199 +1,81 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APEXSIM — VECTORCORE × LIMINAL ENGINE</title>
+// =========================================================
+// APEXSIM.World — Liminal Engine v8.2
+// Simple deterministic tile world for renderer testing
+// =========================================================
 
-    <!-- Favicon Pack -->
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="64x64" href="favicon-64x64.png">
-    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128x128.png">
-    <link rel="icon" type="image/png" sizes="256x256" href="favicon-256x256.png">
+window.APEXSIM = window.APEXSIM || {};
 
-    <!-- VECTORCORE Industrial Control Panel Styles -->
-    <link rel="stylesheet" href="apexui/apexui-controlpanel.css">
+APEXSIM.World = {
 
-    <style>
-        body {
-            margin: 0;
-            background: #000;
-            overflow: hidden;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        }
-        #apexsim-root {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-        }
-        #apexsim-canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            background: #000;
-        }
-    </style>
-</head>
+    width: 0,
+    height: 0,
+    seed: 0,
 
-<body>
-    <div id="apexsim-root">
-        <!-- MAIN SIMULATION CANVAS -->
-        <canvas id="apexsim-canvas" width="1280" height="720"></canvas>
+    tiles: null,
 
-        <!-- LIMINAL ENGINE CONTROL PANEL -->
-        <div id="apex-control-panel" class="vc-panel vc-panel--collapsed">
-            <div class="vc-panel__header">
-                <div class="vc-panel__title">LIMINAL ENGINE</div>
-                <button id="vc-panel-toggle" class="vc-btn vc-btn--icon" title="Toggle Panel">
-                    ☰
-                </button>
-            </div>
+    // Tile types
+    TILE_GRASS: 0,
+    TILE_WATER: 1,
+    TILE_ROCK: 2,
 
-            <div class="vc-panel__section">
-                <div class="vc-section__title">Simulation</div>
-                <div class="vc-row">
-                    <button id="vc-sim-play" class="vc-btn vc-btn--primary">Play</button>
-                    <button id="vc-sim-pause" class="vc-btn vc-btn--secondary">Pause</button>
-                    <button id="vc-sim-step" class="vc-btn vc-btn--secondary">Step</button>
-                </div>
-                <div class="vc-row vc-row--stack">
-                    <label class="vc-label">
-                        Speed
-                        <input id="vc-sim-speed" type="range" min="0.1" max="4" step="0.1" value="1">
-                    </label>
-                    <div class="vc-label__value">
-                        <span id="vc-sim-speed-value">1.0x</span>
-                    </div>
-                </div>
-            </div>
+    // -----------------------------------------------------
+    // INIT
+    // -----------------------------------------------------
+    init(config = {}) {
+        this.width  = config.width  || 64;
+        this.height = config.height || 64;
+        this.seed   = config.seed   || 1;
 
-            <div class="vc-panel__section">
-                <div class="vc-section__title">Units</div>
-                <div class="vc-row">
-                    <button id="vc-units-spawn-1" class="vc-btn vc-btn--primary">Spawn 1</button>
-                    <button id="vc-units-spawn-20" class="vc-btn vc-btn--secondary">Spawn 20</button>
-                </div>
-                <div class="vc-row">
-                    <button id="vc-units-clear" class="vc-btn vc-btn--danger">Clear Units</button>
-                </div>
-            </div>
+        this._seedRandom(this.seed);
+        this._generate();
 
-            <div class="vc-panel__section">
-                <div class="vc-section__title">Renderer</div>
-                <div class="vc-row vc-row--stack">
-                    <label class="vc-checkbox">
-                        <input id="vc-render-grid" type="checkbox" checked>
-                        <span>Show Grid</span>
-                    </label>
-                    <label class="vc-checkbox">
-                        <input id="vc-render-debug" type="checkbox">
-                        <span>Debug Overlay</span>
-                    </label>
-                </div>
-            </div>
+        console.log(
+            `%cAPEXSIM.World — Initialized (${this.width}×${this.height})`,
+            "color:#00ff88;font-weight:bold;"
+        );
+    },
 
-            <div class="vc-panel__section">
-                <div class="vc-section__title">Camera</div>
-                <div class="vc-row">
-                    <button id="vc-camera-zoom-in" class="vc-btn vc-btn--secondary">Zoom In</button>
-                    <button id="vc-camera-zoom-out" class="vc-btn vc-btn--secondary">Zoom Out</button>
-                </div>
-                <div class="vc-row">
-                    <button id="vc-camera-reset" class="vc-btn vc-btn--secondary">Reset</button>
-                </div>
-            </div>
+    // -----------------------------------------------------
+    // WORLD GENERATION
+    // -----------------------------------------------------
+    _generate() {
+        this.tiles = [];
 
-            <div class="vc-panel__footer">
-                <div class="vc-footer__label">VECTORCORE × LIMINAL ENGINE v8.0</div>
-            </div>
-        </div>
-    </div>
+        for (let y = 0; y < this.height; y++) {
+            const row = [];
 
-    <!-- CORE ENGINE ROOT -->
-    <script src="apexcore.js"></script>
+            for (let x = 0; x < this.width; x++) {
+                const n = this._noise(x, y);
 
-    <!-- APEXSIM CORE STACK -->
-    <script src="apexsim/apexsim.js"></script>
-    <script src="apexsim/apexsim-core.js"></script>
-    <script src="apexsim/apexsim-engine.js"></script>
-    <script src="apexsim/apexsim-systems.js"></script>
-    <script src="apexsim/apexsim-modules.js"></script>
-    <script src="apexsim/apexsim-physics.js"></script>
-    <script src="apexsim/apexsim-data.js"></script>
-    <script src="apexsim/apexsim-ui.js"></script>
-    <script src="apexsim/apexsim-renderer.js"></script>
-    <script src="apexsim/apexsim-debug.js"></script>
-    <script src="apexsim/stance/apex-stance.js"></script>
-    <script src="apexsim/apexsim-test.js"></script>
+                let type;
+                if (n < 0.35) type = this.TILE_WATER;
+                else if (n < 0.55) type = this.TILE_GRASS;
+                else type = this.TILE_ROCK;
 
-    <!-- WORLD SYSTEM (NEW APEXSIM WORLD) -->
-    <script src="apexsim/apexsim-world.js"></script>
-
-    <!-- CONTROL LAYER -->
-    <script src="apexsim/apexsim-renderer-control.js"></script>
-    <script src="apexsim/apexsim-debug-control.js"></script>
-    <script src="apexsim/apexsim-camera.js"></script>
-
-    <!-- UI SYSTEM STACK -->
-    <script src="apexui/apexui-input.js"></script>
-    <script src="apexui/apexui-layout.js"></script>
-    <script src="apexui/apexui-panels.js"></script>
-    <script src="apexui/apexui-hud.js"></script>
-
-    <!-- LEGACY WORLD / GAME STACK (SAFE TO KEEP FOR NOW) -->
-    <script src="apexworld/apexworld-config.js"></script>
-    <script src="apexworld/apexworld-data.js"></script>
-    <script src="apexworld/apexworld-biomes.js"></script>
-    <script src="apexworld/apexworld-regions.js"></script>
-    <script src="apexworld/apexworld-terrain.js"></script>
-
-    <script src="apexgame/apexgame-entities.js"></script>
-    <script src="apexgame/apexgame-rules.js"></script>
-    <script src="apexgame/apexgame-story.js"></script>
-    <script src="apexgame/apexgame-events.js"></script>
-
-    <!-- CONTROL PANEL CONTROLLER -->
-    <script src="apexui/apexui-controlpanel.js"></script>
-
-    <!-- FINAL FIXED BOOTSTRAP BLOCK -->
-    <script>
-        const canvas = document.getElementById("apexsim-canvas");
-
-        // Attach UI to canvas
-        if (window.APEXSIM && window.APEXSIM.UI && typeof window.APEXSIM.UI.attachCanvas === "function") {
-            window.APEXSIM.UI.attachCanvas(canvas);
-        } else {
-            console.error("APEXSIM.UI.attachCanvas is not available.");
-        }
-
-        // Initialize world (APEXWORLD v1)
-        if (window.APEXSIM && window.APEXSIM.World && typeof window.APEXSIM.World.init === "function") {
-            window.APEXSIM.World.init({
-                seed: 12345,
-                width: 128,
-                height: 128
-            });
-        } else {
-            console.error("APEXSIM.World.init is not available.");
-        }
-
-        // Spawn one test unit on load (optional)
-        if (window.APEXSIM && window.APEXSIM.Test && typeof window.APEXSIM.Test.spawnTestUnit === "function") {
-            window.APEXSIM.Test.spawnTestUnit();
-        }
-
-        // Render loop ONLY — engine runs itself internally
-        function loop() {
-            if (window.APEXSIM && window.APEXSIM.Renderer && typeof window.APEXSIM.Renderer.render === "function") {
-                window.APEXSIM.Renderer.render();
+                row.push({ type });
             }
-            requestAnimationFrame(loop);
-        }
 
-        loop();
-    </script>
-</body>
-</html>
+            this.tiles.push(row);
+        }
+    },
+
+    // -----------------------------------------------------
+    // SIMPLE DETERMINISTIC NOISE
+    // -----------------------------------------------------
+    _seedRandom(seed) {
+        this._rand = seed;
+    },
+
+    _random() {
+        // Linear congruential generator
+        this._rand = (this._rand * 1664525 + 1013904223) % 4294967296;
+        return this._rand / 4294967296;
+    },
+
+    _noise(x, y) {
+        // Combine coordinates into seed
+        const s = x * 374761393 + y * 668265263;
+        this._seedRandom(this.seed + s);
+        return this._random();
+    }
+};
