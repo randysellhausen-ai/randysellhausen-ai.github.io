@@ -1,5 +1,5 @@
 // =========================================================
-// APEXSIM.AI — Perception, Hearing, Threats, State Machine
+// APEXSIM.AI — Perception, Hearing, Threats, Movement, States
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -35,6 +35,7 @@ APEXSIM.AI = {
     // MAIN UPDATE (called once per frame)
     // -----------------------------------------------------
     update(units, dt) {
+
         // Perception pass
         for (let u of units) {
             if (!u.state) this._initUnit(u);
@@ -203,52 +204,62 @@ APEXSIM.AI = {
     // STATE: IDLE
     // -----------------------------------------------------
     _stateIdle(u, dt) {
-        u.vx *= 0.9;
-        u.vy *= 0.9;
+        // Smooth deceleration
+        u.vx *= 0.85;
+        u.vy *= 0.85;
 
+        // After 1–3 seconds, start wandering
         if (u.stateTimer > 1 + Math.random() * 2) {
             this._changeState(u, "Wander");
         }
     },
 
     // -----------------------------------------------------
-    // STATE: WANDER
+    // STATE: WANDER (upgraded movement)
     // -----------------------------------------------------
     _stateWander(u, dt) {
-        u.vx += (Math.random() - 0.5) * 0.05;
-        u.vy += (Math.random() - 0.5) * 0.05;
+        // Stronger random drift
+        u.vx += (Math.random() - 0.5) * 0.20;
+        u.vy += (Math.random() - 0.5) * 0.20;
 
+        // Cap speed
         const speed = Math.sqrt(u.vx*u.vx + u.vy*u.vy);
-        if (speed > 1.2) {
-            u.vx *= 0.95;
-            u.vy *= 0.95;
+        const maxSpeed = 2.5;
+        if (speed > maxSpeed) {
+            u.vx = (u.vx / speed) * maxSpeed;
+            u.vy = (u.vy / speed) * maxSpeed;
         }
 
+        // After 2–5 seconds, roam
         if (u.stateTimer > 2 + Math.random() * 3) {
             this._changeState(u, "Roam");
         }
     },
 
     // -----------------------------------------------------
-    // STATE: ROAM
+    // STATE: ROAM (upgraded movement)
     // -----------------------------------------------------
     _stateRoam(u, dt) {
-        u.vx += (Math.random() - 0.5) * 0.1;
-        u.vy += (Math.random() - 0.5) * 0.1;
+        // Stronger directional drift
+        u.vx += (Math.random() - 0.5) * 0.40;
+        u.vy += (Math.random() - 0.5) * 0.40;
 
+        // Cap speed
         const speed = Math.sqrt(u.vx*u.vx + u.vy*u.vy);
-        if (speed > 2.0) {
-            u.vx *= 0.9;
-            u.vy *= 0.9;
+        const maxSpeed = 4.0;
+        if (speed > maxSpeed) {
+            u.vx = (u.vvx / speed) * maxSpeed;
+            u.vy = (u.vy / speed) * maxSpeed;
         }
 
+        // Occasionally return to idle
         if (u.stateTimer > 3 + Math.random() * 4) {
             this._changeState(u, "Idle");
         }
     },
 
     // -----------------------------------------------------
-    // STATE: CHASE
+    // STATE: CHASE (upgraded movement)
     // -----------------------------------------------------
     _stateChase(u, dt) {
         let target = null;
@@ -280,12 +291,22 @@ APEXSIM.AI = {
             return;
         }
 
-        u.vx += dx / dist * 0.2;
-        u.vy += dy / dist * 0.2;
+        // Stronger pursuit force
+        const force = 0.6;
+        u.vx += (dx / dist) * force;
+        u.vy += (dy / dist) * force;
+
+        // Cap speed
+        const speed = Math.sqrt(u.vx*u.vx + u.vy*u.vy);
+        const maxSpeed = 5.0;
+        if (speed > maxSpeed) {
+            u.vx = (u.vx / speed) * maxSpeed;
+            u.vy = (u.vy / speed) * maxSpeed;
+        }
     },
 
     // -----------------------------------------------------
-    // STATE: FLEE
+    // STATE: FLEE (upgraded movement)
     // -----------------------------------------------------
     _stateFlee(u, dt) {
         let threat = u.threatMemory[0];
@@ -298,8 +319,18 @@ APEXSIM.AI = {
         const dy = u.y - threat.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
 
-        u.vx += dx / dist * 0.3;
-        u.vy += dy / dist * 0.3;
+        // Stronger escape force
+        const force = 0.8;
+        u.vx += (dx / dist) * force;
+        u.vy += (dy / dist) * force;
+
+        // Cap speed
+        const speed = Math.sqrt(u.vx*u.vx + u.vy*u.vy);
+        const maxSpeed = 6.0;
+        if (speed > maxSpeed) {
+            u.vx = (u.vx / speed) * maxSpeed;
+            u.vy = (u.vy / speed) * maxSpeed;
+        }
 
         if (dist > 200) {
             this._changeState(u, "Idle");
