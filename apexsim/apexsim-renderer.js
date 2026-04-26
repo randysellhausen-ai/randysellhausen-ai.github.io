@@ -24,12 +24,15 @@ APEXSIM.Renderer = {
         console.log("APEXSIM.Renderer — Canvas attached.");
     },
 
+    // -----------------------------------------------------
+    // MAIN RENDER LOOP
+    // -----------------------------------------------------
     render() {
         const ctx = this.ctx;
         const cam = APEXSIM.Camera;
         const units = APEXSIM.Engine.units;
 
-        // Reset transform + clear
+        // Reset transform + clear screen
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -41,23 +44,26 @@ APEXSIM.Renderer = {
         ctx.scale(cam.state.zoom, cam.state.zoom);
         ctx.translate(-cam.state.x, -cam.state.y);
 
-        // Grid
+        // Draw grid
         if (this.showGrid) {
             this._drawGrid();
         }
 
-        // Units
+        // Draw units
         this._drawUnits(units);
 
-        // Center crosshair
+        // Draw center crosshair
         this._drawCenterCrosshair();
 
-        // ⭐ Debug overlay
+        // Debug overlay (AI states, vectors, etc.)
         if (APEXSIM.DebugOverlay && typeof APEXSIM.DebugOverlay.render === "function") {
             APEXSIM.DebugOverlay.render(ctx, units);
         }
     },
 
+    // -----------------------------------------------------
+    // GRID
+    // -----------------------------------------------------
     _drawGrid() {
         const ctx = this.ctx;
         const size = APEXSIM.World.tileSize || 16;
@@ -78,9 +84,13 @@ APEXSIM.Renderer = {
         ctx.stroke();
     },
 
+    // -----------------------------------------------------
+    // UNITS
+    // -----------------------------------------------------
     _drawUnits(units) {
         const ctx = this.ctx;
         ctx.fillStyle = "#00ffaa";
+
         for (let u of units) {
             ctx.beginPath();
             ctx.arc(u.x, u.y, 5, 0, Math.PI * 2);
@@ -88,10 +98,14 @@ APEXSIM.Renderer = {
         }
     },
 
+    // -----------------------------------------------------
+    // CENTER CROSSHAIR
+    // -----------------------------------------------------
     _drawCenterCrosshair() {
         const ctx = this.ctx;
         ctx.strokeStyle = "#444";
         ctx.lineWidth = 1;
+
         ctx.beginPath();
         ctx.moveTo(-10, 0);
         ctx.lineTo(10, 0);
