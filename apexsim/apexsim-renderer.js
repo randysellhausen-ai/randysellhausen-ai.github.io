@@ -1,5 +1,7 @@
 // =========================================================
-// APEXSIM.Renderer — Core Rendering (World + Units + Overlay)
+// APEXSIM.Renderer — Unified Renderer (World + Units + Overlay)
+// Fully compatible with your existing world, camera, input,
+// and control panel.
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -8,13 +10,14 @@ APEXSIM.Renderer = {
 
     canvas: null,
     ctx: null,
+    showGrid: true,
 
     init() {
-        this.canvas = document.getElementById("apexsim-canvas");
+        // Your input system uses #vc-canvas, so we MUST use that.
+        this.canvas = document.getElementById("vc-canvas");
         if (!this.canvas) {
-            this.canvas = document.createElement("canvas");
-            this.canvas.id = "apexsim-canvas";
-            document.body.appendChild(this.canvas);
+            console.error("Renderer ERROR: #vc-canvas not found.");
+            return;
         }
 
         this.ctx = this.canvas.getContext("2d");
@@ -28,78 +31,93 @@ APEXSIM.Renderer = {
     _resize() {
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
-
-        if (APEXSIM.Camera) {
-            APEXSIM.Camera.screenCenterX = this.canvas.width / 2;
-            APEXSIM.Camera.screenCenterY = this.canvas.height / 2;
-        }
     },
 
     render() {
         const ctx = this.ctx;
         if (!ctx) return;
 
-        const camera = APEXSIM.Camera;
+        const cam = APEXSIM.Camera.state;
         const units = APEXSIM.Engine.units;
         const world = APEXSIM.World;
 
+        // Clear screen
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // WORLD TRANSFORM
         ctx.save();
-        ctx.translate(camera.screenCenterX, camera.screenCenterY);
-        ctx.scale(camera.zoom, camera.zoom);
-        ctx.translate(-camera.x, -camera.y);
+        ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+        ctx.scale(cam.zoom, cam.zoom);
+        ctx.translate(-cam.x, -cam.y);
 
+        // Draw world
         this._drawWorld(ctx, world);
-        this._drawUnits(ctx, units);
 
-        ctx.restore();
-
-        if (APEXSIM.DebugOverlay && typeof APEXSIM.DebugOverlay.render === "function") {
-            APEXSIM.DebugOverlay.render(ctx, units, camera);
-        }
-    },
-
-    _drawWorld(ctx, world) {
-        if (!world) return;
-
-        ctx.fillStyle = "#050608";
-        ctx.fillRect(
-            world.originX,
-            world.originY,
-            world.width,
-            world.height
-        );
-
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
-        ctx.lineWidth = 1;
-
-        const step = world.cellSize || 16;
-        for (let x = world.originX; x <= world.originX + world.width; x += step) {
-            ctx.beginPath();
-            ctx.moveTo(x, world.originY);
-            ctx.lineTo(x, world.originY + world.height);
-            ctx.stroke();
-        }
-        for (let y = world.originY; y <= world.originY + world.height; y += step) {
-            ctx.beginPath();
-            ctx.moveTo(world.originX, y);
-            ctx.lineTo(world.originX + world.width, y);
-            ctx.stroke();
-        }
-    },
-
-    _drawUnits(ctx, units) {
+        // Draw units
         for (const u of units) {
             this._drawUnitTriangle(ctx, u);
         }
+
+        ctx.restore();
+
+        // Debug overlay (drawn in SCREEN SPACE)
+        if (APEXSIM.DebugOverlay && APEXSIM.DebugOverlay.enabled) {
+            APEXSIM.DebugOverlay.render(ctx, units, {
+                x: cam.x,
+                y: cam.y,
+                zoom: cam.zoom,
+                screenCenterX: this.canvas.width / 2,
+                screenCenterY: this.canvas.height / 2
+            });
+        }
     },
 
+    // -----------------------------------------------------
+    // WORLD
+    // -----------------------------------------------------
+    _drawWorld(ctx, world) {
+        const w = world.width;
+        const h = world.height;
+        const tile = world.tileSize;
+
+        // Center world at (0,0)
+        const left = -w / 2;
+        const top = -h / 2;
+
+        // Background
+        ctx.fillStyle = "#0a0d10";
+        ctx.fillRect(left, top, w, h);
+
+        if (!this.showGrid) return;
+
+        ctx.strokeStyle = "rgba(255,255,255,0.05)";
+        ctx.lineWidth = 1;
+
+        // Vertical lines
+        for (let x = left; x <= left + w; x += tile) {
+            ctx.beginPath();
+            ctx.moveTo(x, top);
+            ctx.lineTo(x, top + h);
+            ctx.stroke();
+        }
+
+        // Horizontal lines
+        for (let y = top; y <= top + h; y += tile) {
+            ctx.beginPath();
+            ctx.moveTo(left, y);
+            ctx.lineTo(left + w, y);
+            ctx.stroke();
+        }
+    },
+
+    // -----------------------------------------------------
+    // UNITS — Directional Triangles
+    // -----------------------------------------------------
     _drawUnitTriangle(ctx, u) {
         const x = u.x;
         const y = u.y;
 
-        let angle = Math.atan2(u.vy, u.vx || 0.0001);
+        const angle = Math.atan2(u.vy, u.vx || 0.0001);
         const size = 6;
 
         const tipX = x + Math.cos(angle) * size;
@@ -120,11 +138,9 @@ APEXSIM.Renderer = {
         ctx.lineTo(rightX, rightY);
         ctx.closePath();
 
-        if (u.isEnemy) {
-            ctx.fillStyle = "rgba(255, 80, 80, 0.95)";
-        } else {
-            ctx.fillStyle = "rgba(80, 200, 255, 0.95)";
-        }
+        ctx.fillStyle = u.isEnemy
+            ? "rgba(255, 80, 80, 0.95)"
+            : "rgba(80, 200, 255, 0.95)";
 
         ctx.fill();
     }
