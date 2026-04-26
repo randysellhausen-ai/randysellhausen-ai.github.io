@@ -12,7 +12,6 @@ APEXSIM.DebugOverlay = {
         console.log("APEXSIM.DebugOverlay — Ready.");
     },
 
-    // Generic entry point (Renderer may call draw or render)
     draw(ctx, units, camera) {
         this.render(ctx, units, camera);
     },
@@ -34,7 +33,6 @@ APEXSIM.DebugOverlay = {
     },
 
     _drawUnitOverlay(ctx, u) {
-        // Base position
         const x = u.x;
         const y = u.y;
 
@@ -92,7 +90,7 @@ APEXSIM.DebugOverlay = {
             ctx.stroke();
         }
 
-        // Threat markers (last seen target)
+        // Threat marker
         if (u.lastSeenTarget) {
             const tx = u.lastSeenTarget.x;
             const ty = u.lastSeenTarget.y;
