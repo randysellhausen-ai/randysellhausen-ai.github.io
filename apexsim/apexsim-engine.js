@@ -1,5 +1,5 @@
 // =========================================================
-// APEXSIM.Engine — core simulation
+// APEXSIM.Engine — core simulation (Auto‑Play Edition)
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -7,7 +7,7 @@ window.APEXSIM = window.APEXSIM || {};
 APEXSIM.Engine = {
 
     units: [],
-    _running: false,
+    _running: true,          // ⭐ AUTO‑PLAY ENABLED ⭐
     _speed: 1,
     _stepRequested: false,
     time: 0,
@@ -20,6 +20,7 @@ APEXSIM.Engine = {
     _loop() {
         requestAnimationFrame(() => this._loop());
 
+        // Engine now ALWAYS runs unless paused manually
         if (!this._running && !this._stepRequested) return;
 
         const dt = 0.016 * this._speed;
