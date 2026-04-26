@@ -1,12 +1,12 @@
 // =========================================================
-// APEXSIM.Renderer — Liminal Engine v8.2 (Corrected Full File)
+// APEXSIM.Renderer — Liminal Engine v8.2 (World‑Centered)
 // =========================================================
 // Responsibilities:
 // - Attach canvas + context
-// - Render world (APEXWORLD v1)
-// - Render units
+// - Render world centered on camera
+// - Render units in world space
 // - Render debug overlay
-// - Integrate with camera.state (REQUIRED)
+// - Integrate with Camera.state
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -51,7 +51,7 @@ APEXSIM.Renderer = {
         this._clear();
         this._applyCamera();
 
-        this._drawWorld();
+        this._drawWorldCentered();
         this._drawUnits();
         this._drawDebug();
 
@@ -74,8 +74,14 @@ APEXSIM.Renderer = {
         const cam = this.camera;
 
         ctx.save();
+
+        // Move origin to center of screen
         ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+
+        // Apply zoom
         ctx.scale(cam.zoom, cam.zoom);
+
+        // Move world so camera.x, camera.y is at screen center
         ctx.translate(-cam.x, -cam.y);
     },
 
@@ -84,14 +90,22 @@ APEXSIM.Renderer = {
     },
 
     // -----------------------------------------------------
-    // WORLD RENDERING (APEXWORLD v1)
+    // WORLD RENDERING (CENTERED)
     // -----------------------------------------------------
-    _drawWorld() {
+    _drawWorldCentered() {
         const World = APEXSIM.World;
         if (!World || !World.tiles) return;
 
         const ctx = this.ctx;
         const size = this.tileSize;
+
+        // Compute world pixel dimensions
+        const worldPixelWidth  = World.width  * size;
+        const worldPixelHeight = World.height * size;
+
+        // Compute world origin so that world center is at (0,0)
+        const originX = -worldPixelWidth  / 2;
+        const originY = -worldPixelHeight / 2;
 
         for (let y = 0; y < World.height; y++) {
             for (let x = 0; x < World.width; x++) {
@@ -105,13 +119,18 @@ APEXSIM.Renderer = {
                 }
 
                 ctx.fillStyle = color;
-                ctx.fillRect(x * size, y * size, size, size);
+                ctx.fillRect(
+                    originX + x * size,
+                    originY + y * size,
+                    size,
+                    size
+                );
             }
         }
     },
 
     // -----------------------------------------------------
-    // UNIT RENDERING
+    // UNIT RENDERING (WORLD‑CENTERED)
     // -----------------------------------------------------
     _drawUnits() {
         const Engine = APEXSIM.Engine;
