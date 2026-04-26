@@ -1,5 +1,127 @@
 <!DOCTYPE html>
+<html lang="e<!DOCTYPE html>
 <html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Liminal Engine v8.2</title>
+
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            color: #fff;
+            font-family: monospace;
+            overflow: hidden;
+        }
+        #vc-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 260px;
+            height: 100%;
+            background: #111;
+            padding: 12px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        #vc-canvas {
+            position: absolute;
+            left: 260px;
+            top: 0;
+            width: calc(100% - 260px);
+            height: 100%;
+            background: #000;
+        }
+        .vc-section {
+            margin-bottom: 20px;
+        }
+        .vc-section h3 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            color: #00ffaa;
+        }
+        .vc-btn {
+            display: block;
+            width: 100%;
+            margin-bottom: 6px;
+            padding: 8px;
+            background: #222;
+            border: 1px solid #444;
+            color: #fff;
+            cursor: pointer;
+        }
+        .vc-btn:hover {
+            background: #333;
+        }
+        .vc-btn--danger {
+            background: #550000;
+            border-color: #aa0000;
+        }
+        .vc-btn--danger:hover {
+            background: #770000;
+        }
+        input[type=range] {
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="vc-container">
+
+        <div class="vc-section">
+            <h3>Simulation</h3>
+            <button id="vc-sim-play" class="vc-btn">Play</button>
+            <button id="vc-sim-pause" class="vc-btn">Pause</button>
+            <button id="vc-sim-step" class="vc-btn">Step</button>
+            <button id="vc-sim-stop" class="vc-btn vc-btn--danger">Stop</button>
+            <label>Speed</label>
+            <input id="vc-sim-speed" type="range" min="0.1" max="4" step="0.1" value="1">
+        </div>
+
+        <div class="vc-section">
+            <h3>Units</h3>
+            <button id="vc-units-spawn1" class="vc-btn">Spawn 1</button>
+            <button id="vc-units-spawn20" class="vc-btn">Spawn 20</button>
+            <button id="vc-units-clear" class="vc-btn vc-btn--danger">Clear Units</button>
+        </div>
+
+        <div class="vc-section">
+            <h3>Renderer</h3>
+            <label><input type="checkbox" id="vc-render-grid" checked> Show Grid</label><br>
+            <label><input type="checkbox" id="vc-render-debug"> Debug Overlay</label>
+        </div>
+
+        <div class="vc-section">
+            <h3>Camera</h3>
+            <button id="vc-cam-zoomin" class="vc-btn">Zoom In</button>
+            <button id="vc-cam-zoomout" class="vc-btn">Zoom Out</button>
+            <button id="vc-cam-reset" class="vc-btn">Reset</button>
+        </div>
+
+        <div style="margin-top:20px;color:#888;">
+            VECTORCORE × LIMINAL ENGINE V8.2
+        </div>
+
+    </div>
+
+    <canvas id="vc-canvas"></canvas>
+
+    <script src="apexsim/apexsim-core.js"></script>
+    <script src="apexsim/apexsim-camera.js"></script>
+    <script src="apexsim/apexsim-engine.js"></script>
+    <script src="apexsim/apexsim-world.js"></script>
+    <script src="apexsim/apexsim-ai.js"></script>
+    <script src="apexsim/apexsim-debug-overlay.js"></script>
+    <script src="apexsim/apexsim-renderer.js"></script>
+    <script src="apexsim/apexsim-test.js"></script>
+    <script src="apexsim/apexsim-input.js"></script>
+    <script src="apexsim/apexsim-renderer-control.js"></script>
+
+</body>
+</html>
+n">
 <head>
     <meta charset="UTF-8">
     <title>Liminal Engine v8.2</title>
