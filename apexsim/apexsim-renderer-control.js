@@ -1,20 +1,14 @@
 // =========================================================
-// APEXUI.ControlPanel — Liminal Engine v8.2
-// =========================================================
-// - Binds UI buttons to Engine + Renderer + Camera
-// - Handles simulation controls, unit spawning, debug toggles
+// APEXUI.ControlPanel — binds UI to Engine/Renderer/Camera
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
 
-APEXUI = {
+const APEXUI = {
 
     init() {
         console.log("APEXUI.ControlPanel — Ready.");
 
-        // -------------------------------------------------
-        // SIMULATION CONTROLS
-        // -------------------------------------------------
         document.getElementById("vc-sim-play").addEventListener("click", () => {
             APEXSIM.Engine.play();
         });
@@ -27,25 +21,18 @@ APEXUI = {
             APEXSIM.Engine.step();
         });
 
-        // ⭐ STOP (Soft Reset)
         document.getElementById("vc-sim-stop").addEventListener("click", () => {
             APEXSIM.Engine.stop();
         });
 
-        // -------------------------------------------------
-        // SPEED SLIDER
-        // -------------------------------------------------
         const speedSlider = document.getElementById("vc-sim-speed");
         speedSlider.addEventListener("input", () => {
             const value = parseFloat(speedSlider.value);
             APEXSIM.Engine.setSpeed(value);
         });
 
-        // -------------------------------------------------
-        // UNIT CONTROLS
-        // -------------------------------------------------
         document.getElementById("vc-units-spawn1").addEventListener("click", () => {
-            APEXSIM.Engine.addUnit(0, 0); // Camera-centered spawn
+            APEXSIM.Engine.addUnit(0, 0);
         });
 
         document.getElementById("vc-units-spawn20").addEventListener("click", () => {
@@ -61,21 +48,15 @@ APEXUI = {
             APEXSIM.Engine.clearUnits();
         });
 
-        // -------------------------------------------------
-        // RENDERER TOGGLES
-        // -------------------------------------------------
         document.getElementById("vc-render-grid").addEventListener("change", (e) => {
             APEXSIM.Renderer.showGrid = e.target.checked;
         });
 
         document.getElementById("vc-render-debug").addEventListener("change", (e) => {
-            if (!APEXSIM.DebugControl) return;
-            APEXSIM.DebugControl.enabled = e.target.checked;
+            // placeholder for future debug overlay
+            console.log("Debug overlay:", e.target.checked);
         });
 
-        // -------------------------------------------------
-        // CAMERA CONTROLS
-        // -------------------------------------------------
         document.getElementById("vc-cam-zoomin").addEventListener("click", () => {
             APEXSIM.Camera.zoomIn();
         });
@@ -90,5 +71,4 @@ APEXUI = {
     }
 };
 
-// Auto-init
 window.addEventListener("DOMContentLoaded", () => APEXUI.init());
