@@ -1,6 +1,6 @@
 // =========================================================
 // APEXSIM.BTVisualizer — Floating Draggable BT Debug Window
-// v1.1 — Non-invasive, read-only, auto-wired
+// v1.3 — Minimalist Live Node Firing View
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -10,16 +10,23 @@ APEXSIM.BTVisualizer = {
     _rootEl: null,
     _headerEl: null,
     _contentEl: null,
+
     _isDragging: false,
     _dragOffsetX: 0,
     _dragOffsetY: 0,
+
     _selectedIndex: 0,
+    _maxEventsPerUnit: 32,
+
+    // Map<unitObject, Array<{nodeType, result, time}>>
+    _eventsByUnit: new Map(),
 
     init() {
         this._createDOM();
         this._attachEvents();
+        this._wireBTDebug();
         this._startLoop();
-        console.log("APEXSIM.BTVisualizer — Ready (Floating Window).");
+        console.log("APEXSIM.BTVisualizer — Ready (v1.3 Minimalist Live Node Firing).");
     },
 
     // -----------------------------------------------------
@@ -44,7 +51,7 @@ APEXSIM.BTVisualizer = {
         root.style.position = "absolute";
         root.style.right = "20px";
         root.style.top = "20px";
-        root.style.width = "320px";
+        root.style.width = "360px";
         root.style.maxHeight = "60vh";
         root.style.background = "rgba(0,0,0,0.9)";
         root.style.border = "1px solid #00ffaa";
@@ -65,7 +72,7 @@ APEXSIM.BTVisualizer = {
         header.style.justifyContent = "space-between";
 
         const title = document.createElement("div");
-        title.textContent = "APEXSIM — Behavior Tree";
+        title.textContent = "APEXSIM — Behavior Tree (Live)";
         title.style.color = "#00ffaa";
 
         const controls = document.createElement("div");
@@ -129,7 +136,7 @@ APEXSIM.BTVisualizer = {
     },
 
     // -----------------------------------------------------
-    // Events (Dragging)
+    // Events (Dragging + Keyboard)
     // -----------------------------------------------------
     _attachEvents() {
         if (!this._headerEl || !this._rootEl) return;
@@ -164,6 +171,52 @@ APEXSIM.BTVisualizer = {
     },
 
     // -----------------------------------------------------
+    // Wire into BT Debug Instrumentation
+    // -----------------------------------------------------
+    _wireBTDebug() {
+        window.APEXSIM = window.APEXSIM || {};
+        APEXSIM.BTDebug = APEXSIM.BTDebug || {};
+
+        const prevEnter = APEXSIM.BTDebug.onNodeEnter || function () {};
+        const prevExit  = APEXSIM.BTDebug.onNodeExit  || function () {};
+
+        APEXSIM.BTDebug.onNodeEnter = (node, unit) => {
+            prevEnter(node, unit);
+            // For minimalist mode we don't need to log enter separately,
+            // but we could in the future. Keeping hook for expansion.
+        };
+
+        APEXSIM.BTDebug.onNodeExit = (node, unit, result) => {
+            prevExit(node, unit, result);
+            this._recordNodeEvent(node, unit, result);
+        };
+    },
+
+    _recordNodeEvent(node, unit, result) {
+        if (!unit) return;
+
+        const key = unit; // object reference as key
+        if (!this._eventsByUnit.has(key)) {
+            this._eventsByUnit.set(key, []);
+        }
+
+        const list = this._eventsByUnit.get(key);
+        const nodeType = node && node.constructor && node.constructor.name
+            ? node.constructor.name
+            : "Node";
+
+        list.push({
+            nodeType,
+            result,
+            time: performance.now()
+        });
+
+        if (list.length > this._maxEventsPerUnit) {
+            list.shift();
+        }
+    },
+
+    // -----------------------------------------------------
     // Unit stepping
     // -----------------------------------------------------
     _stepUnit(delta) {
@@ -190,9 +243,14 @@ APEXSIM.BTVisualizer = {
 
     _update() {
         if (!this._contentEl) return;
+
         const units = (APEXSIM.Engine && APEXSIM.Engine.units) || [];
         if (!units.length) {
-            this._contentEl.textContent = "No units.\n\nSpawn units to inspect Behavior Trees.";
+            this._contentEl.textContent =
+                "No units.\n\nSpawn units to inspect Behavior Trees.\n\n" +
+                "Controls:\n" +
+                "  < / > : Switch unit\n" +
+                "  B     : Toggle window";
             return;
         }
 
@@ -201,23 +259,53 @@ APEXSIM.BTVisualizer = {
 
         const lines = [];
 
+        // -------------------------------------------------
+        // Unit header
+        // -------------------------------------------------
         lines.push(`Unit Index: ${index}`);
         lines.push(`------------------------------`);
-        lines.push(`State:    ${u.state || "Unknown"}`);
-        lines.push(`Behavior: ${u.behaviorName || "None"}`);
+        lines.push(`Label:   ${u.label || u.id || "(unnamed)"}`);
+        lines.push(`State:   ${u.state || "Unknown"}`);
+        lines.push(`Behavior:${u.behaviorName || "None"}`);
         lines.push(`vx: ${u.vx != null ? u.vx.toFixed(2) : "?"}`);
         lines.push(`vy: ${u.vy != null ? u.vy.toFixed(2) : "?"}`);
         lines.push("");
 
-        // Show a static view of the BT structure per state
-        lines.push("Behavior Tree (Current State)");
+        // -------------------------------------------------
+        // Live BT Events (Minimalist)
+        // -------------------------------------------------
+        lines.push("Recent BT Events (Live)");
         lines.push("------------------------------");
 
-        const treeLines = this._getTreeForState(u.state || "Idle");
-        for (const l of treeLines) {
-            lines.push(l);
+        const events = this._eventsByUnit.get(u) || [];
+        if (!events.length) {
+            lines.push("No BT events yet.");
+        } else {
+            const now = performance.now();
+            const lastIndex = events.length - 1;
+
+            for (let i = 0; i < events.length; i++) {
+                const ev = events[i];
+                const ageMs = now - ev.time;
+                const age = ageMs < 1000
+                    ? `${ageMs.toFixed(0)}ms`
+                    : `${(ageMs / 1000).toFixed(1)}s`;
+
+                const resultLabel = this._formatResult(ev.result);
+                const colorTag = this._resultColorTag(ev.result);
+
+                const prefix = (i === lastIndex) ? ">" : " ";
+                lines.push(
+                    `${prefix} [${resultLabel}] ${ev.nodeType}  (${age} ago) ${colorTag}`
+                );
+            }
         }
 
+        lines.push("");
+        lines.push("Legend:");
+        lines.push("  SUCCESS = green");
+        lines.push("  FAILURE = red");
+        lines.push("  RUNNING = yellow");
         lines.push("");
         lines.push("Controls:");
         lines.push("  < / > : Switch unit");
@@ -226,53 +314,23 @@ APEXSIM.BTVisualizer = {
         this._contentEl.textContent = lines.join("\n");
     },
 
-    // -----------------------------------------------------
-    // BT Structure Descriptions
-    // -----------------------------------------------------
-    _getTreeForState(state) {
-        switch (state) {
-            case "Idle":
-                return [
-                    "Selector",
-                    " ├─ InvestigateSound",
-                    " ├─ InvestigateLastSeen",
-                    " ├─ SocialDrift",
-                    " └─ Curiosity"
-                ];
+    _formatResult(result) {
+        const BT = APEXSIM.BT || {};
+        switch (result) {
+            case BT.SUCCESS: return "SUCCESS";
+            case BT.FAILURE: return "FAILURE";
+            case BT.RUNNING: return "RUNNING";
+            default: return "UNKNOWN";
+        }
+    },
 
-            case "Wander":
-                return [
-                    "Selector",
-                    " ├─ InvestigateSound",
-                    " ├─ SocialDrift",
-                    " └─ Curiosity"
-                ];
-
-            case "Roam":
-                return [
-                    "Selector",
-                    " ├─ InvestigateSound",
-                    " ├─ InvestigateLastSeen",
-                    " └─ Curiosity"
-                ];
-
-            case "Chase":
-                return [
-                    "Action",
-                    " └─ ChaseTarget"
-                ];
-
-            case "Flee":
-                return [
-                    "Action",
-                    " └─ FleeThreat"
-                ];
-
-            default:
-                return [
-                    "Unknown State",
-                    "No BT structure available."
-                ];
+    _resultColorTag(result) {
+        const BT = APEXSIM.BT || {};
+        switch (result) {
+            case BT.SUCCESS: return "[G]";
+            case BT.FAILURE: return "[R]";
+            case BT.RUNNING: return "[Y]";
+            default: return "[?]";
         }
     }
 };
