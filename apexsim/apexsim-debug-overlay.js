@@ -6,7 +6,7 @@ window.APEXSIM = window.APEXSIM || {};
 
 APEXSIM.DebugOverlay = {
 
-    enabled: false,
+    enabled: true,
 
     init() {
         console.log("APEXSIM.DebugOverlay — Ready.");
@@ -36,7 +36,6 @@ APEXSIM.DebugOverlay = {
         const x = u.x;
         const y = u.y;
 
-        // Vision radius
         if (u.visionRadius) {
             ctx.beginPath();
             ctx.strokeStyle = "rgba(0, 255, 180, 0.25)";
@@ -45,7 +44,6 @@ APEXSIM.DebugOverlay = {
             ctx.stroke();
         }
 
-        // Hearing radius
         if (u.hearingRadius) {
             ctx.beginPath();
             ctx.strokeStyle = "rgba(0, 180, 255, 0.15)";
@@ -54,7 +52,6 @@ APEXSIM.DebugOverlay = {
             ctx.stroke();
         }
 
-        // Dynamic FOV wedge
         if (u.visionFOV && (u.vx !== 0 || u.vy !== 0)) {
             const facing = Math.atan2(u.vy, u.vx || 0.0001);
             const half = u.visionFOV * 0.5;
@@ -90,7 +87,6 @@ APEXSIM.DebugOverlay = {
             ctx.stroke();
         }
 
-        // Threat marker
         if (u.lastSeenTarget) {
             const tx = u.lastSeenTarget.x;
             const ty = u.lastSeenTarget.y;
@@ -106,7 +102,6 @@ APEXSIM.DebugOverlay = {
             ctx.stroke();
         }
 
-        // State label
         ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
         ctx.font = "10px monospace";
         const label = (u.state || "Unknown") + (u.isEnemy ? " [E]" : "");
