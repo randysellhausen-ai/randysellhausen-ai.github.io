@@ -10,6 +10,7 @@ APEXSIM.Engine = {
     _running: false,
     _speed: 1,
     _stepRequested: false,
+    time: 0, // <-- add this
 
     init() {
         console.log("APEXSIM.Engine — Initialized.");
@@ -34,6 +35,16 @@ APEXSIM.Engine = {
 
     _update(dt) {
         const scale = 60 * 8; // 8× movement scale
+
+        // advance global time
+        this.time += dt;
+
+        // run AI (perception + states + movement decisions)
+        if (APEXSIM.AI && typeof APEXSIM.AI.update === "function") {
+            APEXSIM.AI.update(this.units, dt);
+        }
+
+        // integrate velocities into positions
         for (let unit of this.units) {
             unit.x += unit.vx * dt * scale;
             unit.y += unit.vy * dt * scale;
@@ -57,6 +68,7 @@ APEXSIM.Engine = {
         this._speed = 1;
         this._stepRequested = false;
         this.units = [];
+        this.time = 0;
         console.log("APEXSIM.Engine — STOP invoked (soft reset).");
     },
 
