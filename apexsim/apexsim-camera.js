@@ -1,10 +1,10 @@
 // =========================================================
-// APEXSIM.Camera — Liminal Engine v8.2 (Corrected 1.0 Version)
+// APEXSIM.Camera — Liminal Engine v8.2 (World‑Centered Version)
 // =========================================================
-// - Provides a real camera state object
+// - Real camera state object
+// - Centers on world automatically
+// - Reset returns to world center
 // - Works with Renderer via Camera.state
-// - Zoom / Pan / Reset are stable
-// - No auto-init (bootloader initializes it properly)
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -12,7 +12,7 @@ window.APEXSIM = window.APEXSIM || {};
 APEXSIM.Camera = {
 
     // -----------------------------------------------------
-    // CAMERA STATE (REAL OBJECT)
+    // CAMERA STATE
     // -----------------------------------------------------
     state: {
         x: 0,
@@ -25,10 +25,22 @@ APEXSIM.Camera = {
     maxZoom: 3.0,
 
     // -----------------------------------------------------
-    // INIT
+    // INIT — centers camera on world
     // -----------------------------------------------------
     init() {
-        console.log("APEXSIM.Camera — Ready.");
+        const World = window.APEXSIM && APEXSIM.World;
+        const Renderer = window.APEXSIM && APEXSIM.Renderer;
+
+        if (World && Renderer && World.width && World.height) {
+            const worldPixelWidth  = World.width  * Renderer.tileSize;
+            const worldPixelHeight = World.height * Renderer.tileSize;
+
+            this.state.x = worldPixelWidth  / 2;
+            this.state.y = worldPixelHeight / 2;
+            this.state.zoom = 1;
+        }
+
+        console.log("APEXSIM.Camera — Ready (World‑Centered).");
     },
 
     // -----------------------------------------------------
@@ -43,8 +55,20 @@ APEXSIM.Camera = {
     },
 
     reset() {
-        this.state.x = 0;
-        this.state.y = 0;
+        const World = window.APEXSIM && APEXSIM.World;
+        const Renderer = window.APEXSIM && APEXSIM.Renderer;
+
+        if (World && Renderer && World.width && World.height) {
+            const worldPixelWidth  = World.width  * Renderer.tileSize;
+            const worldPixelHeight = World.height * Renderer.tileSize;
+
+            this.state.x = worldPixelWidth  / 2;
+            this.state.y = worldPixelHeight / 2;
+        } else {
+            this.state.x = 0;
+            this.state.y = 0;
+        }
+
         this.state.zoom = 1;
     },
 
