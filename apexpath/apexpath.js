@@ -1,141 +1,101 @@
 // =========================================================
-// APEXPATH — Core Pathfinding (v1.0)
-// =========================================================
-// Grid-based A* pathfinding on APEXWORLD.World
-// - Uses tile coordinates (x, y) in world space
-// - Respects APEXWORLD.World.isWalkable(x, y)
-// - Returns an array of { x, y } tiles (inclusive)
+// APEXPATH 1.0 — Liminal Engine Core Pathfinding
+// Simple deterministic A* for grid worlds
 // =========================================================
 
-window.APEXPATH = window.APEXPATH || {};
+window.APEXSIM = window.APEXSIM || {};
+APEXSIM.Path = {
 
-APEXPATH.Pathfinder = {
+    // -----------------------------------------------------
+    // PUBLIC API
+    // -----------------------------------------------------
+    findPath(startX, startY, endX, endY) {
+        const world = APEXSIM.World;
+        if (!world || !world.tiles) return [];
 
-    // Public API
-    findPath(startX, startY, goalX, goalY) {
-        const world = APEXWORLD && APEXWORLD.World;
-        if (!world) return [];
+        const open = [];
+        const closed = new Set();
+        const start = this._node(startX, startY, null, 0, this._h(startX, startY, endX, endY));
+        open.push(start);
 
-        if (!world.inBounds(startX, startY) || !world.inBounds(goalX, goalY)) {
-            return [];
-        }
+        while (open.length > 0) {
+            // Get lowest f-cost node
+            open.sort((a, b) => a.f - b.f);
+            const current = open.shift();
+            const key = `${current.x},${current.y}`;
+            closed.add(key);
 
-        if (!world.isWalkable(goalX, goalY)) {
-            // Goal not walkable — no path
-            return [];
-        }
-
-        const openSet = [];
-        const cameFrom = new Map();
-        const gScore = new Map();
-        const fScore = new Map();
-
-        const startKey = this._key(startX, startY);
-        const goalKey = this._key(goalX, goalY);
-
-        gScore.set(startKey, 0);
-        fScore.set(startKey, this._heuristic(startX, startY, goalX, goalY));
-
-        openSet.push({ x: startX, y: startY, key: startKey });
-
-        while (openSet.length > 0) {
-            // Get node with lowest fScore
-            let bestIndex = 0;
-            let bestNode = openSet[0];
-            let bestF = fScore.get(bestNode.key) ?? Infinity;
-
-            for (let i = 1; i < openSet.length; i++) {
-                const node = openSet[i];
-                const f = fScore.get(node.key) ?? Infinity;
-                if (f < bestF) {
-                    bestF = f;
-                    bestNode = node;
-                    bestIndex = i;
-                }
+            // Reached goal
+            if (current.x === endX && current.y === endY) {
+                return this._reconstruct(current);
             }
 
-            const current = bestNode;
-            if (current.key === goalKey) {
-                return this._reconstructPath(cameFrom, current);
-            }
+            // Explore neighbors
+            const neighbors = this._neighbors(current.x, current.y);
+            for (const n of neighbors) {
+                const nKey = `${n.x},${n.y}`;
+                if (closed.has(nKey)) continue;
+                if (!this._walkable(n.x, n.y)) continue;
 
-            // Remove from open set
-            openSet.splice(bestIndex, 1);
+                const g = current.g + 1;
+                const h = this._h(n.x, n.y, endX, endY);
+                const f = g + h;
 
-            // Explore neighbors (4-way)
-            const neighbors = this._neighbors(world, current.x, current.y);
-            for (let i = 0; i < neighbors.length; i++) {
-                const n = neighbors[i];
-                const nKey = this._key(n.x, n.y);
-
-                const tentativeG = (gScore.get(current.key) ?? Infinity) + 1;
-
-                if (tentativeG < (gScore.get(nKey) ?? Infinity)) {
-                    cameFrom.set(nKey, current);
-                    gScore.set(nKey, tentativeG);
-                    fScore.set(
-                        nKey,
-                        tentativeG + this._heuristic(n.x, n.y, goalX, goalY)
-                    );
-
-                    if (!openSet.some(o => o.key === nKey)) {
-                        openSet.push({ x: n.x, y: n.y, key: nKey });
+                const existing = open.find(o => o.x === n.x && o.y === n.y);
+                if (existing) {
+                    if (g < existing.g) {
+                        existing.g = g;
+                        existing.f = f;
+                        existing.parent = current;
                     }
+                } else {
+                    open.push(this._node(n.x, n.y, current, g, h));
                 }
             }
         }
 
-        // No path
-        return [];
+        return []; // No path
     },
 
-    // =====================================================
-    // Helpers
-    // =====================================================
-
-    _key(x, y) {
-        return x + "," + y;
+    // -----------------------------------------------------
+    // INTERNAL HELPERS
+    // -----------------------------------------------------
+    _node(x, y, parent, g, h) {
+        return { x, y, parent, g, h, f: g + h };
     },
 
-    _heuristic(x1, y1, x2, y2) {
-        // Manhattan distance (grid)
+    _h(x1, y1, x2, y2) {
+        // Manhattan distance
         return Math.abs(x1 - x2) + Math.abs(y1 - y2);
     },
 
-    _neighbors(world, x, y) {
-        const out = [];
-
-        const dirs = [
-            { x: 1, y: 0 },
-            { x: -1, y: 0 },
-            { x: 0, y: 1 },
-            { x: 0, y: -1 }
+    _neighbors(x, y) {
+        return [
+            { x: x + 1, y },
+            { x: x - 1, y },
+            { x, y: y + 1 },
+            { x, y: y - 1 }
         ];
-
-        for (let i = 0; i < dirs.length; i++) {
-            const nx = x + dirs[i].x;
-            const ny = y + dirs[i].y;
-
-            if (!world.inBounds(nx, ny)) continue;
-            if (!world.isWalkable(nx, ny)) continue;
-
-            out.push({ x: nx, y: ny });
-        }
-
-        return out;
     },
 
-    _reconstructPath(cameFrom, current) {
-        const path = [{ x: current.x, y: current.y }];
+    _walkable(x, y) {
+        const world = APEXSIM.World;
+        if (x < 0 || y < 0 || x >= world.width || y >= world.height) return false;
 
-        let key = this._key(current.x, current.y);
-        while (cameFrom.has(key)) {
-            const prev = cameFrom.get(key);
-            path.push({ x: prev.x, y: prev.y });
-            key = this._key(prev.x, prev.y);
+        const tile = world.tiles[y][x];
+        if (!tile) return false;
+
+        // Basic rule: water is blocked
+        return tile.type !== world.TILE_WATER;
+    },
+
+    _reconstruct(node) {
+        const path = [];
+        let cur = node;
+        while (cur) {
+            path.push({ x: cur.x, y: cur.y });
+            cur = cur.parent;
         }
-
-        path.reverse();
-        return path;
+        return path.reverse();
     }
 };
