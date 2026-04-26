@@ -1,5 +1,5 @@
 // =========================================================
-// APEXSIM.DebugOverlay — visual debug layer
+// APEXSIM.DebugOverlay — Visual Debug + AI State Overlay
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -12,6 +12,9 @@ APEXSIM.DebugOverlay = {
         console.log("APEXSIM.DebugOverlay — Ready.");
     },
 
+    // -----------------------------------------------------
+    // MAIN RENDER ENTRY
+    // -----------------------------------------------------
     render(ctx, units) {
         if (!this.enabled) return;
 
@@ -25,28 +28,48 @@ APEXSIM.DebugOverlay = {
 
         for (let u of units) {
 
-            // Position label
+            // POSITION LABEL
             ctx.fillText(
                 `ID:${id} (${u.x.toFixed(1)}, ${u.y.toFixed(1)})`,
-                u.x + 10,
-                u.y - 10
+                u.x + 12,
+                u.y - 12
             );
 
-            // Velocity vector
+            // VELOCITY VECTOR
             ctx.beginPath();
             ctx.moveTo(u.x, u.y);
             ctx.lineTo(u.x + u.vx * 20, u.y + u.vy * 20);
             ctx.stroke();
 
-            // Bounding circle
+            // BOUNDING CIRCLE
             ctx.beginPath();
             ctx.arc(u.x, u.y, 8, 0, Math.PI * 2);
             ctx.stroke();
+
+            // ⭐ AI STATE OVERLAY
+            const aiState = this._getAIState(u);
+            ctx.fillStyle = "#ffaa00";
+            ctx.fillText(aiState, u.x + 12, u.y + 4);
+
+            // reset color for next unit
+            ctx.fillStyle = "#ff00ff";
 
             id++;
         }
 
         ctx.restore();
+    },
+
+    // -----------------------------------------------------
+    // AI STATE LOGIC (placeholder, velocity-based)
+    // -----------------------------------------------------
+    _getAIState(unit) {
+        const speed = Math.sqrt(unit.vx * unit.vx + unit.vy * unit.vy);
+
+        if (speed < 0.1) return "Idle";
+        if (speed < 1.0) return "Wandering";
+        if (speed < 2.0) return "Roaming";
+        return "Sprinting";
     }
 };
 
