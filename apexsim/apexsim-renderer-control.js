@@ -1,66 +1,94 @@
 // =========================================================
-// APEXSIM.RendererControl — Liminal Engine v8.2
+// APEXUI.ControlPanel — Liminal Engine v8.2
 // =========================================================
-// Responsibilities:
-// - Bind UI controls for renderer-related features
-// - Toggle grid visibility
-// - Toggle debug overlay (via DebugControl.enabled)
-// - Connect camera zoom buttons
+// - Binds UI buttons to Engine + Renderer + Camera
+// - Handles simulation controls, unit spawning, debug toggles
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
 
-APEXSIM.RendererControl = {
+APEXUI = {
 
     init() {
-        const Renderer = APEXSIM.Renderer;
-        const DebugControl = APEXSIM.DebugControl;
-        const Camera = APEXSIM.Camera;
+        console.log("APEXUI.ControlPanel — Ready.");
 
         // -------------------------------------------------
-        // GRID TOGGLE
+        // SIMULATION CONTROLS
         // -------------------------------------------------
-        const gridCheckbox = document.getElementById("showGrid");
-        if (gridCheckbox) {
-            gridCheckbox.addEventListener("change", () => {
-                Renderer.showGrid = gridCheckbox.checked;
-            });
-        }
+        document.getElementById("vc-sim-play").addEventListener("click", () => {
+            APEXSIM.Engine.play();
+        });
+
+        document.getElementById("vc-sim-pause").addEventListener("click", () => {
+            APEXSIM.Engine.pause();
+        });
+
+        document.getElementById("vc-sim-step").addEventListener("click", () => {
+            APEXSIM.Engine.step();
+        });
+
+        // ⭐ STOP (Soft Reset)
+        document.getElementById("vc-sim-stop").addEventListener("click", () => {
+            APEXSIM.Engine.stop();
+        });
 
         // -------------------------------------------------
-        // DEBUG OVERLAY TOGGLE
+        // SPEED SLIDER
         // -------------------------------------------------
-        const debugCheckbox = document.getElementById("debugOverlay");
-        if (debugCheckbox) {
-            debugCheckbox.addEventListener("change", () => {
-                DebugControl.enabled = debugCheckbox.checked;
-            });
-        }
+        const speedSlider = document.getElementById("vc-sim-speed");
+        speedSlider.addEventListener("input", () => {
+            const value = parseFloat(speedSlider.value);
+            APEXSIM.Engine.setSpeed(value);
+        });
+
+        // -------------------------------------------------
+        // UNIT CONTROLS
+        // -------------------------------------------------
+        document.getElementById("vc-units-spawn1").addEventListener("click", () => {
+            APEXSIM.Engine.addUnit(0, 0); // Camera-centered spawn
+        });
+
+        document.getElementById("vc-units-spawn20").addEventListener("click", () => {
+            for (let i = 0; i < 20; i++) {
+                APEXSIM.Engine.addUnit(
+                    (Math.random() - 0.5) * 200,
+                    (Math.random() - 0.5) * 200
+                );
+            }
+        });
+
+        document.getElementById("vc-units-clear").addEventListener("click", () => {
+            APEXSIM.Engine.clearUnits();
+        });
+
+        // -------------------------------------------------
+        // RENDERER TOGGLES
+        // -------------------------------------------------
+        document.getElementById("vc-render-grid").addEventListener("change", (e) => {
+            APEXSIM.Renderer.showGrid = e.target.checked;
+        });
+
+        document.getElementById("vc-render-debug").addEventListener("change", (e) => {
+            if (!APEXSIM.DebugControl) return;
+            APEXSIM.DebugControl.enabled = e.target.checked;
+        });
 
         // -------------------------------------------------
         // CAMERA CONTROLS
         // -------------------------------------------------
-        const zoomInBtn = document.getElementById("zoomIn");
-        if (zoomInBtn) {
-            zoomInBtn.addEventListener("click", () => {
-                Camera.zoomIn();
-            });
-        }
+        document.getElementById("vc-cam-zoomin").addEventListener("click", () => {
+            APEXSIM.Camera.zoomIn();
+        });
 
-        const zoomOutBtn = document.getElementById("zoomOut");
-        if (zoomOutBtn) {
-            zoomOutBtn.addEventListener("click", () => {
-                Camera.zoomOut();
-            });
-        }
+        document.getElementById("vc-cam-zoomout").addEventListener("click", () => {
+            APEXSIM.Camera.zoomOut();
+        });
 
-        const resetBtn = document.getElementById("resetCamera");
-        if (resetBtn) {
-            resetBtn.addEventListener("click", () => {
-                Camera.reset();
-            });
-        }
-
-        console.log("APEXSIM.RendererControl — Ready.");
+        document.getElementById("vc-cam-reset").addEventListener("click", () => {
+            APEXSIM.Camera.reset();
+        });
     }
 };
+
+// Auto-init
+window.addEventListener("DOMContentLoaded", () => APEXUI.init());
