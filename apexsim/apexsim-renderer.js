@@ -1,12 +1,5 @@
 // =========================================================
-// APEXSIM.Renderer — Liminal Engine v8.2 (World‑Centered)
-// =========================================================
-// Responsibilities:
-// - Attach canvas + context
-// - Render world centered on camera
-// - Render units in world space
-// - Render debug overlay
-// - Integrate with Camera.state
+// APEXSIM.Renderer — canvas + grid + units
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
@@ -15,171 +8,86 @@ APEXSIM.Renderer = {
 
     canvas: null,
     ctx: null,
-    camera: null,
+    showGrid: true,
 
-    tileSize: 16, // world tile size in pixels
+    init() {
+        this.canvas = document.getElementById("vc-canvas");
+        this.ctx = this.canvas.getContext("2d");
 
-    // -----------------------------------------------------
-    // INIT
-    // -----------------------------------------------------
-    init(canvas) {
-        if (!canvas) {
-            console.error("APEXSIM.Renderer.init — No canvas provided.");
-            return;
-        }
-
-        this.canvas = canvas;
-        this.ctx = canvas.getContext("2d");
-
-        // REQUIRED: camera must use .state
-        if (APEXSIM.Camera && APEXSIM.Camera.state) {
-            this.camera = APEXSIM.Camera.state;
-        } else {
-            console.error("APEXSIM.Renderer — Camera.state missing.");
-            this.camera = { x: 0, y: 0, zoom: 1 };
-        }
+        const resize = () => {
+            this.canvas.width = window.innerWidth - 260;
+            this.canvas.height = window.innerHeight;
+        };
+        window.addEventListener("resize", resize);
+        resize();
 
         console.log("APEXSIM.Renderer — Canvas attached.");
     },
 
-    // -----------------------------------------------------
-    // MAIN RENDER LOOP ENTRY
-    // -----------------------------------------------------
     render() {
-        if (!this.ctx || !this.camera) return;
-
-        this._clear();
-        this._applyCamera();
-
-        this._drawWorldCentered();
-        this._drawUnits();
-        this._drawDebug();
-
-        this._restoreCamera();
-    },
-
-    // -----------------------------------------------------
-    // CLEAR SCREEN
-    // -----------------------------------------------------
-    _clear() {
-        this.ctx.fillStyle = "#000000";
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    },
-
-    // -----------------------------------------------------
-    // CAMERA TRANSFORM
-    // -----------------------------------------------------
-    _applyCamera() {
         const ctx = this.ctx;
-        const cam = this.camera;
+        const cam = APEXSIM.Camera;
+        const units = APEXSIM.Engine.units;
 
-        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Move origin to center of screen
-        ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+        const cx = this.canvas.width / 2;
+        const cy = this.canvas.height / 2;
 
-        // Apply zoom
-        ctx.scale(cam.zoom, cam.zoom);
+        ctx.translate(cx, cy);
+        ctx.scale(cam.state.zoom, cam.state.zoom);
+        ctx.translate(-cam.state.x, -cam.state.y);
 
-        // Move world so camera.x, camera.y is at screen center
-        ctx.translate(-cam.x, -cam.y);
-    },
-
-    _restoreCamera() {
-        this.ctx.restore();
-    },
-
-    // -----------------------------------------------------
-    // WORLD RENDERING (CENTERED)
-    // -----------------------------------------------------
-    _drawWorldCentered() {
-        const World = APEXSIM.World;
-        if (!World || !World.tiles) return;
-
-        const ctx = this.ctx;
-        const size = this.tileSize;
-
-        // Compute world pixel dimensions
-        const worldPixelWidth  = World.width  * size;
-        const worldPixelHeight = World.height * size;
-
-        // Compute world origin so that world center is at (0,0)
-        const originX = -worldPixelWidth  / 2;
-        const originY = -worldPixelHeight / 2;
-
-        for (let y = 0; y < World.height; y++) {
-            for (let x = 0; x < World.width; x++) {
-                const tile = World.tiles[y][x];
-
-                let color;
-                switch (tile.type) {
-                    case World.TILE_WATER: color = "#103050"; break;
-                    case World.TILE_ROCK:  color = "#555555"; break;
-                    default:               color = "#203820"; break;
-                }
-
-                ctx.fillStyle = color;
-                ctx.fillRect(
-                    originX + x * size,
-                    originY + y * size,
-                    size,
-                    size
-                );
-            }
+        if (this.showGrid) {
+            this._drawGrid();
         }
+
+        this._drawUnits(units);
+        this._drawCenterCrosshair();
     },
 
-    // -----------------------------------------------------
-    // UNIT RENDERING (WORLD‑CENTERED)
-    // -----------------------------------------------------
-    _drawUnits() {
-        const Engine = APEXSIM.Engine;
-        if (!Engine || !Engine.units) return;
-
+    _drawGrid() {
         const ctx = this.ctx;
+        const size = APEXSIM.World.tileSize;
+        const half = 2048;
 
-        ctx.fillStyle = "#00eaff";
+        ctx.strokeStyle = "#222";
+        ctx.lineWidth = 1;
 
-        for (let unit of Engine.units) {
+        ctx.beginPath();
+        for (let x = -half; x <= half; x += size) {
+            ctx.moveTo(x, -half);
+            ctx.lineTo(x, half);
+        }
+        for (let y = -half; y <= half; y += size) {
+            ctx.moveTo(-half, y);
+            ctx.lineTo(half, y);
+        }
+        ctx.stroke();
+    },
+
+    _drawUnits(units) {
+        const ctx = this.ctx;
+        ctx.fillStyle = "#00ffaa";
+        for (let u of units) {
             ctx.beginPath();
-            ctx.arc(unit.x, unit.y, 4, 0, Math.PI * 2);
+            ctx.arc(u.x, u.y, 5, 0, Math.PI * 2);
             ctx.fill();
-
-            ctx.strokeStyle = "#00eaff";
-            ctx.beginPath();
-            ctx.moveTo(unit.x, unit.y);
-            ctx.lineTo(unit.x + unit.vx * 8, unit.y + unit.vy * 8);
-            ctx.stroke();
         }
     },
 
-    // -----------------------------------------------------
-    // DEBUG OVERLAY
-    // -----------------------------------------------------
-    _drawDebug() {
-        const Debug = APEXSIM.DebugControl;
-        if (!Debug || !Debug.enabled) return;
-
-        const Engine = APEXSIM.Engine;
-
-        this.ctx.save();
-        this.ctx.resetTransform();
-        this.ctx.fillStyle = "#ffffff";
-        this.ctx.font = "14px monospace";
-
-        const lines = [
-            `Units: ${Engine.units.length}`,
-            `Running: ${Engine._running}`,
-            `Speed: ${Engine._speed.toFixed(2)}x`,
-            `Step Requested: ${Engine._stepRequested}`
-        ];
-
-        let y = 20;
-        for (let line of lines) {
-            this.ctx.fillText(line, 20, y);
-            y += 18;
-        }
-
-        this.ctx.restore();
+    _drawCenterCrosshair() {
+        const ctx = this.ctx;
+        ctx.strokeStyle = "#444";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-10, 0);
+        ctx.lineTo(10, 0);
+        ctx.moveTo(0, -10);
+        ctx.lineTo(0, 10);
+        ctx.stroke();
     }
 };
+
+window.addEventListener("DOMContentLoaded", () => APEXSIM.Renderer.init());
