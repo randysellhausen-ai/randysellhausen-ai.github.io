@@ -1,105 +1,60 @@
 // =========================================================
-// APEXSIM.Camera — Liminal Engine v8.2
-// Camera controller for zoom, pan, and reset
+// APEXSIM.Camera — Liminal Engine v8.2 (Corrected 1.0 Version)
 // =========================================================
-// - Works directly with APEXSIM.Renderer.camera
-// - Control panel buttons call zoomIn / zoomOut / reset
-// - Future‑proof for panning, tracking, smoothing
+// - Provides a real camera state object
+// - Works with Renderer via Camera.state
+// - Zoom / Pan / Reset are stable
+// - No auto-init (bootloader initializes it properly)
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
 
 APEXSIM.Camera = {
 
+    // -----------------------------------------------------
+    // CAMERA STATE (REAL OBJECT)
+    // -----------------------------------------------------
+    state: {
+        x: 0,
+        y: 0,
+        zoom: 1
+    },
+
     zoomStep: 0.1,
     minZoom: 0.2,
     maxZoom: 3.0,
 
+    // -----------------------------------------------------
+    // INIT
+    // -----------------------------------------------------
     init() {
-        const Renderer = window.APEXSIM && APEXSIM.Renderer;
-        if (!Renderer) {
-            console.error("APEXSIM.Camera — Renderer not found.");
-            return;
-        }
-
-        // UI BUTTON: Zoom In
-        const zoomInBtn = document.getElementById("vc-camera-zoom-in");
-        if (zoomInBtn) {
-            zoomInBtn.addEventListener("click", () => {
-                this.zoomIn();
-            });
-        }
-
-        // UI BUTTON: Zoom Out
-        const zoomOutBtn = document.getElementById("vc-camera-zoom-out");
-        if (zoomOutBtn) {
-            zoomOutBtn.addEventListener("click", () => {
-                this.zoomOut();
-            });
-        }
-
-        // UI BUTTON: Reset Camera
-        const resetBtn = document.getElementById("vc-camera-reset");
-        if (resetBtn) {
-            resetBtn.addEventListener("click", () => {
-                this.reset();
-            });
-        }
-
         console.log("APEXSIM.Camera — Ready.");
     },
 
-    // =====================================================
+    // -----------------------------------------------------
     // CAMERA ACTIONS
-    // =====================================================
-
+    // -----------------------------------------------------
     zoomIn() {
-        const Renderer = APEXSIM.Renderer;
-        const cam = Renderer.camera;
-
-        cam.zoom = Math.min(this.maxZoom, cam.zoom + this.zoomStep);
+        this.state.zoom = Math.min(this.maxZoom, this.state.zoom + this.zoomStep);
     },
 
     zoomOut() {
-        const Renderer = APEXSIM.Renderer;
-        const cam = Renderer.camera;
-
-        cam.zoom = Math.max(this.minZoom, cam.zoom - this.zoomStep);
+        this.state.zoom = Math.max(this.minZoom, this.state.zoom - this.zoomStep);
     },
 
     reset() {
-        const Renderer = APEXSIM.Renderer;
-        const cam = Renderer.camera;
-
-        cam.x = 0;
-        cam.y = 0;
-        cam.zoom = 1;
+        this.state.x = 0;
+        this.state.y = 0;
+        this.state.zoom = 1;
     },
 
-    // =====================================================
-    // FUTURE EXPANSION (not used yet)
-    // =====================================================
-
     pan(dx, dy) {
-        const Renderer = APEXSIM.Renderer;
-        const cam = Renderer.camera;
-
-        cam.x += dx;
-        cam.y += dy;
+        this.state.x += dx;
+        this.state.y += dy;
     },
 
     setPosition(x, y) {
-        const Renderer = APEXSIM.Renderer;
-        const cam = Renderer.camera;
-
-        cam.x = x;
-        cam.y = y;
+        this.state.x = x;
+        this.state.y = y;
     }
 };
-
-// Auto‑init after DOM is ready
-document.addEventListener("DOMContentLoaded", () => {
-    if (window.APEXSIM && APEXSIM.Camera) {
-        APEXSIM.Camera.init();
-    }
-});
