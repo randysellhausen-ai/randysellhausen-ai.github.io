@@ -1,123 +1,199 @@
-// =========================================================
-// APEXSIM.World — Liminal Engine v8.2
-// WORLD GENERATION (APEXWORLD v1)
-// =========================================================
-// Responsibilities:
-// - Define a deterministic tile-based world
-// - Generate a 2D grid of tiles using a seed
-// - Provide helpers for querying tiles and properties
-// - Integrate cleanly with Engine and Renderer
-// =========================================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APEXSIM — VECTORCORE × LIMINAL ENGINE</title>
 
-window.APEXSIM = window.APEXSIM || {};
+    <!-- Favicon Pack -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon-64x64.png">
+    <link rel="icon" type="image/png" sizes="128x128" href="favicon-128x128.png">
+    <link rel="icon" type="image/png" sizes="256x256" href="favicon-256x256.png">
 
-APEXSIM.World = {
+    <!-- VECTORCORE Industrial Control Panel Styles -->
+    <link rel="stylesheet" href="apexui/apexui-controlpanel.css">
 
-    // -----------------------------------------------------
-    // CONFIG
-    // -----------------------------------------------------
-    seed: 12345,          // Change for different worlds
-    width: 128,           // tiles
-    height: 128,          // tiles
-    tiles: null,          // 2D array [y][x]
-
-    // Tile types (v1)
-    TILE_GRASS: 0,
-    TILE_WATER: 1,
-    TILE_ROCK:  2,
-
-    // -----------------------------------------------------
-    // INIT / GENERATION
-    // -----------------------------------------------------
-    init(config = {}) {
-        if (typeof config.seed === "number")  this.seed  = config.seed;
-        if (typeof config.width === "number") this.width = config.width;
-        if (typeof config.height === "number") this.height = config.height;
-
-        this._initRNG(this.seed);
-        this._generateTiles();
-
-        console.log(
-            `APEXSIM.World — Generated ${this.width}x${this.height} world with seed ${this.seed}.`
-        );
-    },
-
-    _generateTiles() {
-        const w = this.width;
-        const h = this.height;
-
-        this.tiles = new Array(h);
-        for (let y = 0; y < h; y++) {
-            this.tiles[y] = new Array(w);
-            for (let x = 0; x < w; x++) {
-                this.tiles[y][x] = this._generateTile(x, y);
-            }
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
-    },
+        #apexsim-root {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #apexsim-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+    </style>
+</head>
 
-    _generateTile(x, y) {
-        // Simple deterministic noise-ish pattern using seeded RNG
-        const n = this._noise2D(x, y);
+<body>
+    <div id="apexsim-root">
+        <!-- MAIN SIMULATION CANVAS -->
+        <canvas id="apexsim-canvas" width="1280" height="720"></canvas>
 
-        let type;
-        if (n < 0.25) {
-            type = this.TILE_WATER;
-        } else if (n < 0.35) {
-            type = this.TILE_ROCK;
+        <!-- LIMINAL ENGINE CONTROL PANEL -->
+        <div id="apex-control-panel" class="vc-panel vc-panel--collapsed">
+            <div class="vc-panel__header">
+                <div class="vc-panel__title">LIMINAL ENGINE</div>
+                <button id="vc-panel-toggle" class="vc-btn vc-btn--icon" title="Toggle Panel">
+                    ☰
+                </button>
+            </div>
+
+            <div class="vc-panel__section">
+                <div class="vc-section__title">Simulation</div>
+                <div class="vc-row">
+                    <button id="vc-sim-play" class="vc-btn vc-btn--primary">Play</button>
+                    <button id="vc-sim-pause" class="vc-btn vc-btn--secondary">Pause</button>
+                    <button id="vc-sim-step" class="vc-btn vc-btn--secondary">Step</button>
+                </div>
+                <div class="vc-row vc-row--stack">
+                    <label class="vc-label">
+                        Speed
+                        <input id="vc-sim-speed" type="range" min="0.1" max="4" step="0.1" value="1">
+                    </label>
+                    <div class="vc-label__value">
+                        <span id="vc-sim-speed-value">1.0x</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="vc-panel__section">
+                <div class="vc-section__title">Units</div>
+                <div class="vc-row">
+                    <button id="vc-units-spawn-1" class="vc-btn vc-btn--primary">Spawn 1</button>
+                    <button id="vc-units-spawn-20" class="vc-btn vc-btn--secondary">Spawn 20</button>
+                </div>
+                <div class="vc-row">
+                    <button id="vc-units-clear" class="vc-btn vc-btn--danger">Clear Units</button>
+                </div>
+            </div>
+
+            <div class="vc-panel__section">
+                <div class="vc-section__title">Renderer</div>
+                <div class="vc-row vc-row--stack">
+                    <label class="vc-checkbox">
+                        <input id="vc-render-grid" type="checkbox" checked>
+                        <span>Show Grid</span>
+                    </label>
+                    <label class="vc-checkbox">
+                        <input id="vc-render-debug" type="checkbox">
+                        <span>Debug Overlay</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="vc-panel__section">
+                <div class="vc-section__title">Camera</div>
+                <div class="vc-row">
+                    <button id="vc-camera-zoom-in" class="vc-btn vc-btn--secondary">Zoom In</button>
+                    <button id="vc-camera-zoom-out" class="vc-btn vc-btn--secondary">Zoom Out</button>
+                </div>
+                <div class="vc-row">
+                    <button id="vc-camera-reset" class="vc-btn vc-btn--secondary">Reset</button>
+                </div>
+            </div>
+
+            <div class="vc-panel__footer">
+                <div class="vc-footer__label">VECTORCORE × LIMINAL ENGINE v8.0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CORE ENGINE ROOT -->
+    <script src="apexcore.js"></script>
+
+    <!-- APEXSIM CORE STACK -->
+    <script src="apexsim/apexsim.js"></script>
+    <script src="apexsim/apexsim-core.js"></script>
+    <script src="apexsim/apexsim-engine.js"></script>
+    <script src="apexsim/apexsim-systems.js"></script>
+    <script src="apexsim/apexsim-modules.js"></script>
+    <script src="apexsim/apexsim-physics.js"></script>
+    <script src="apexsim/apexsim-data.js"></script>
+    <script src="apexsim/apexsim-ui.js"></script>
+    <script src="apexsim/apexsim-renderer.js"></script>
+    <script src="apexsim/apexsim-debug.js"></script>
+    <script src="apexsim/stance/apex-stance.js"></script>
+    <script src="apexsim/apexsim-test.js"></script>
+
+    <!-- WORLD SYSTEM (NEW APEXSIM WORLD) -->
+    <script src="apexsim/apexsim-world.js"></script>
+
+    <!-- CONTROL LAYER -->
+    <script src="apexsim/apexsim-renderer-control.js"></script>
+    <script src="apexsim/apexsim-debug-control.js"></script>
+    <script src="apexsim/apexsim-camera.js"></script>
+
+    <!-- UI SYSTEM STACK -->
+    <script src="apexui/apexui-input.js"></script>
+    <script src="apexui/apexui-layout.js"></script>
+    <script src="apexui/apexui-panels.js"></script>
+    <script src="apexui/apexui-hud.js"></script>
+
+    <!-- LEGACY WORLD / GAME STACK (SAFE TO KEEP FOR NOW) -->
+    <script src="apexworld/apexworld-config.js"></script>
+    <script src="apexworld/apexworld-data.js"></script>
+    <script src="apexworld/apexworld-biomes.js"></script>
+    <script src="apexworld/apexworld-regions.js"></script>
+    <script src="apexworld/apexworld-terrain.js"></script>
+
+    <script src="apexgame/apexgame-entities.js"></script>
+    <script src="apexgame/apexgame-rules.js"></script>
+    <script src="apexgame/apexgame-story.js"></script>
+    <script src="apexgame/apexgame-events.js"></script>
+
+    <!-- CONTROL PANEL CONTROLLER -->
+    <script src="apexui/apexui-controlpanel.js"></script>
+
+    <!-- FINAL FIXED BOOTSTRAP BLOCK -->
+    <script>
+        const canvas = document.getElementById("apexsim-canvas");
+
+        // Attach UI to canvas
+        if (window.APEXSIM && window.APEXSIM.UI && typeof window.APEXSIM.UI.attachCanvas === "function") {
+            window.APEXSIM.UI.attachCanvas(canvas);
         } else {
-            type = this.TILE_GRASS;
+            console.error("APEXSIM.UI.attachCanvas is not available.");
         }
 
-        return {
-            x,
-            y,
-            type,
-            walkable: (type !== this.TILE_WATER && type !== this.TILE_ROCK),
-            elevation: 0,   // reserved for v2
-            biome: "default" // reserved for v2
-        };
-    },
+        // Initialize world (APEXWORLD v1)
+        if (window.APEXSIM && window.APEXSIM.World && typeof window.APEXSIM.World.init === "function") {
+            window.APEXSIM.World.init({
+                seed: 12345,
+                width: 128,
+                height: 128
+            });
+        } else {
+            console.error("APEXSIM.World.init is not available.");
+        }
 
-    // -----------------------------------------------------
-    // SEEDED RNG + NOISE
-    // -----------------------------------------------------
-    _rngState: 1,
+        // Spawn one test unit on load (optional)
+        if (window.APEXSIM && window.APEXSIM.Test && typeof window.APEXSIM.Test.spawnTestUnit === "function") {
+            window.APEXSIM.Test.spawnTestUnit();
+        }
 
-    _initRNG(seed) {
-        // Simple LCG
-        this._rngState = seed >>> 0;
-    },
+        // Render loop ONLY — engine runs itself internally
+        function loop() {
+            if (window.APEXSIM && window.APEXSIM.Renderer && typeof window.APEXSIM.Renderer.render === "function") {
+                window.APEXSIM.Renderer.render();
+            }
+            requestAnimationFrame(loop);
+        }
 
-    _rand() {
-        // LCG parameters (Numerical Recipes)
-        this._rngState = (1664525 * this._rngState + 1013904223) >>> 0;
-        return this._rngState / 0xFFFFFFFF;
-    },
-
-    _noise2D(x, y) {
-        // Hash coordinates into RNG state for local noise
-        const prev = this._rngState;
-        const h = (x * 374761393 + y * 668265263) ^ (x * y);
-        this._rngState = (h ^ (h >>> 13)) >>> 0;
-        const v = this._rand();
-        this._rngState = prev;
-        return v;
-    },
-
-    // -----------------------------------------------------
-    // QUERY HELPERS
-    // -----------------------------------------------------
-    inBounds(x, y) {
-        return x >= 0 && y >= 0 && x < this.width && y < this.height;
-    },
-
-    getTile(x, y) {
-        if (!this.inBounds(x, y)) return null;
-        return this.tiles[y][x];
-    },
-
-    isWalkable(x, y) {
-        const t = this.getTile(x, y);
-        return !!(t && t.walkable);
-    }
-};
+        loop();
+    </script>
+</body>
+</html>
