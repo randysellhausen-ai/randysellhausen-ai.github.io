@@ -1,19 +1,15 @@
 // =========================================================
-// APEXSIM.Camera — Liminal Engine v8.2 (World‑Centered Version)
+// APEXSIM.Camera — Liminal Engine v8.2 (Tile‑Aligned Version)
 // =========================================================
-// - Real camera state object
-// - Centers on world automatically
-// - Reset returns to world center
-// - Works with Renderer via Camera.state
+// - Centers camera on the true visual center of the world
+// - Accounts for tileSize offset (half‑tile)
+// - Reset returns to correct center
 // =========================================================
 
 window.APEXSIM = window.APEXSIM || {};
 
 APEXSIM.Camera = {
 
-    // -----------------------------------------------------
-    // CAMERA STATE
-    // -----------------------------------------------------
     state: {
         x: 0,
         y: 0,
@@ -25,22 +21,23 @@ APEXSIM.Camera = {
     maxZoom: 3.0,
 
     // -----------------------------------------------------
-    // INIT — centers camera on world
+    // INIT — centers camera on world (tile‑aligned)
     // -----------------------------------------------------
     init() {
-        const World = window.APEXSIM && APEXSIM.World;
+        const World    = window.APEXSIM && APEXSIM.World;
         const Renderer = window.APEXSIM && APEXSIM.Renderer;
 
         if (World && Renderer && World.width && World.height) {
             const worldPixelWidth  = World.width  * Renderer.tileSize;
             const worldPixelHeight = World.height * Renderer.tileSize;
 
-            this.state.x = worldPixelWidth  / 2;
-            this.state.y = worldPixelHeight / 2;
+            // Correct tile‑aligned center
+            this.state.x = (worldPixelWidth  / 2) - (Renderer.tileSize / 2);
+            this.state.y = (worldPixelHeight / 2) - (Renderer.tileSize / 2);
             this.state.zoom = 1;
         }
 
-        console.log("APEXSIM.Camera — Ready (World‑Centered).");
+        console.log("APEXSIM.Camera — Ready (Tile‑Aligned).");
     },
 
     // -----------------------------------------------------
@@ -55,15 +52,15 @@ APEXSIM.Camera = {
     },
 
     reset() {
-        const World = window.APEXSIM && APEXSIM.World;
+        const World    = window.APEXSIM && APEXSIM.World;
         const Renderer = window.APEXSIM && APEXSIM.Renderer;
 
         if (World && Renderer && World.width && World.height) {
             const worldPixelWidth  = World.width  * Renderer.tileSize;
             const worldPixelHeight = World.height * Renderer.tileSize;
 
-            this.state.x = worldPixelWidth  / 2;
-            this.state.y = worldPixelHeight / 2;
+            this.state.x = (worldPixelWidth  / 2) - (Renderer.tileSize / 2);
+            this.state.y = (worldPixelHeight / 2) - (Renderer.tileSize / 2);
         } else {
             this.state.x = 0;
             this.state.y = 0;
