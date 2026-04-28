@@ -1,5 +1,5 @@
 body {
-  background: #111;
+  background: #0a0a0a;
   color: #eee;
   font-family: Arial, sans-serif;
   padding: 20px;
@@ -7,11 +7,61 @@ body {
 
 h1 {
   margin-bottom: 20px;
+  color: #00eaff;
+  text-shadow: 0 0 10px #00eaff;
+}
+
+#tick-pulse {
+  width: 12px;
+  height: 12px;
+  background: #00eaff;
+  border-radius: 50%;
+  margin-bottom: 20px;
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
 }
 
 .npc {
-  background: #222;
+  background: #111;
   padding: 15px;
-  margin-bottom: 10px;
-  border-radius: 8px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  border: 2px solid #00eaff;
+  box-shadow: 0 0 10px #00eaff55;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
+.npc.wandering {
+  animation: wander 1.5s infinite ease-in-out;
+}
+
+@keyframes wander {
+  0% { transform: translateX(0px); }
+  50% { transform: translateX(4px); }
+  100% { transform: translateX(0px); }
+}
+
+.npc.eating {
+  box-shadow: 0 0 20px #00ff88;
+}
+
+.npc.resting {
+  opacity: 0.7;
+}
+
+.bar {
+  height: 12px;
+  background: #222;
+  border-radius: 6px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  transition: width 0.5s ease, background 0.5s ease;
+}
+
+.hunger-fill { background: #ff4444; }
+.energy-fill { background: #44aaff; }
+.mood-fill { background: #ffaa00; }
